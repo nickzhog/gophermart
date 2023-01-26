@@ -53,5 +53,6 @@ func StartServer(logger *logging.Logger, cfg *config.Config, reps repositories.R
 		})
 	})
 
+	logger.Trace("starting web server")
 	logger.Fatal(http.ListenAndServe(cfg.Settings.RunAddress, r))
 }

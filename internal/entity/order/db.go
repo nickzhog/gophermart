@@ -26,7 +26,7 @@ func (r *repository) Update(ctx context.Context, o Order) error {
 
 func NewRepository(client postgres.Client, logger *logging.Logger) Repository {
 	q := `
-	CREATE TABLE IF NOT EXIST public.orders (
+	CREATE TABLE IF NOT EXISTS public.orders (
 		id TEXT PRIMARY KEY,
 		user_id UUID NOT NULL,
 		status text NOT NULL DEFAULT 'NEW',

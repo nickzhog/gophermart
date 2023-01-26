@@ -19,7 +19,7 @@ func (r *repository) Create(ctx context.Context, id string, sum int, usr user.Us
 
 func NewRepository(client postgres.Client, logger *logging.Logger) Repository {
 	q := `
-	CREATE TABLE IF NOT EXIST public.withdrawals (
+	CREATE TABLE IF NOT EXISTS public.withdrawals (
 		id TEXT PRIMARY KEY,
 		user_id UUID NOT NULL,
 		sum TEXT NOT NULL,

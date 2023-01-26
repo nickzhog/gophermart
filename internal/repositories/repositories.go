@@ -18,8 +18,8 @@ const (
 )
 
 type Repositories struct {
-	Order      order.Repository
 	User       user.Repository
+	Order      order.Repository
 	Withdrawal withdrawal.Repository
 }
 
@@ -35,8 +35,8 @@ func GetRepositories(logger *logging.Logger, cfg *config.Config) Repositories {
 		logger.Fatal(err)
 	}
 	return Repositories{
-		Order:      order.NewRepository(pool, logger),
 		User:       user.NewRepository(pool, logger),
+		Order:      order.NewRepository(pool, logger),
 		Withdrawal: withdrawal.NewRepository(pool, logger),
 	}
 }

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXIST public.users (
+CREATE TABLE IF NOT EXISTS public.users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     login TEXT NOT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXIST public.users (
     withdrawn_amount TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXIST public.orders (
+CREATE TABLE IF NOT EXISTS public.orders (
     id TEXT PRIMARY KEY,
     user_id UUID NOT NULL,
     status text NOT NULL DEFAULT 'NEW',
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXIST public.orders (
 	constraint user_id foreign key (user_id) references public.users (id)
 );
 
-CREATE TABLE IF NOT EXIST public.withdrawals (
+CREATE TABLE IF NOT EXISTS public.withdrawals (
     id TEXT PRIMARY KEY,
     user_id UUID NOT NULL,
     sum TEXT NOT NULL,

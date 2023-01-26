@@ -30,7 +30,7 @@ func (r *repository) Update(ctx context.Context, usr User) error {
 
 func NewRepository(client postgres.Client, logger *logging.Logger) Repository {
 	q := `
-	CREATE TABLE IF NOT EXIST public.users (
+	CREATE TABLE IF NOT EXISTS public.users (
 		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 		create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		login TEXT NOT NULL,
