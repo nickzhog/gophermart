@@ -16,9 +16,9 @@ type Config struct {
 
 func GetConfig() *Config {
 	cfg := &Config{}
-	flag.StringVar(&cfg.Settings.RunAddress, "a", ":8080", "address for server listen")
+	flag.StringVar(&cfg.Settings.RunAddress, "a", ":80", "address for server listen")
 	flag.StringVar(&cfg.Settings.DatabaseURI, "d", "", "Database URI")
-	flag.StringVar(&cfg.Settings.AccrualSystemAddress, "a", "", "accural system address")
+	flag.StringVar(&cfg.Settings.AccrualSystemAddress, "r", "", "accural system address")
 
 	flag.Parse()
 
