@@ -29,6 +29,20 @@ func (r *repository) Update(ctx context.Context, usr User) error {
 }
 
 func NewRepository(client postgres.Client, logger *logging.Logger) Repository {
+	q := `
+	CREATE TABLE IF NOT EXIST public.users (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		login TEXT NOT NULL,
+		password_hash TEXT NOT NULL, 
+		balance TEXT NOT NULL,
+		withdrawn_amount TEXT NOT NULL
+	);
+	`
+	_, err := client.Exec(context.TODO(), q)
+	if err != nil {
+		logger.Fatal(err)
+	}
 	return &repository{
 		client: client,
 		logger: logger,

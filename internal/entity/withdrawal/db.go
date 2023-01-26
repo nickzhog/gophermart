@@ -18,6 +18,19 @@ func (r *repository) Create(ctx context.Context, id string, sum int, usr user.Us
 }
 
 func NewRepository(client postgres.Client, logger *logging.Logger) Repository {
+	q := `
+	CREATE TABLE IF NOT EXIST public.withdrawals (
+		id TEXT PRIMARY KEY,
+		user_id UUID NOT NULL,
+		sum TEXT NOT NULL,
+		processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		constraint user_id foreign key (user_id) references public.users (id)
+	);	
+	`
+	_, err := client.Exec(context.TODO(), q)
+	if err != nil {
+		logger.Fatal(err)
+	}
 	return &repository{
 		client: client,
 		logger: logger,

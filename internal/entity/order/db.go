@@ -25,6 +25,22 @@ func (r *repository) Update(ctx context.Context, o Order) error {
 }
 
 func NewRepository(client postgres.Client, logger *logging.Logger) Repository {
+	q := `
+	CREATE TABLE IF NOT EXIST public.orders (
+		id TEXT PRIMARY KEY,
+		user_id UUID NOT NULL,
+		status text NOT NULL DEFAULT 'NEW',
+		accrual TEXT NOT NULL,
+		sum TEXT NOT NULL,
+		upload_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		constraint user_id foreign key (user_id) references public.users (id)
+	);
+	`
+	_, err := client.Exec(context.TODO(), q)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
 	return &repository{
 		client: client,
 		logger: logger,
