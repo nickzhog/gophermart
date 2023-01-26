@@ -5,6 +5,9 @@ import (
 	"time"
 
 	"github.com/nickzhog/gophermart/internal/config"
+	"github.com/nickzhog/gophermart/internal/entity/order"
+	"github.com/nickzhog/gophermart/internal/entity/user"
+	"github.com/nickzhog/gophermart/internal/entity/withdrawal"
 	"github.com/nickzhog/gophermart/internal/postgres"
 	"github.com/nickzhog/gophermart/pkg/logging"
 )
@@ -15,6 +18,9 @@ const (
 )
 
 type Repositories struct {
+	Order      order.Repository
+	User       user.Repository
+	Withdrawal withdrawal.Repository
 }
 
 func GetRepositories(logger *logging.Logger, cfg *config.Config) Repositories {
@@ -28,5 +34,9 @@ func GetRepositories(logger *logging.Logger, cfg *config.Config) Repositories {
 	if err = pool.Ping(ctx); err != nil {
 		logger.Fatal(err)
 	}
-	return Repositories{}
+	return Repositories{
+		Order:      order.NewRepository(pool, logger),
+		User:       user.NewRepository(pool, logger),
+		Withdrawal: withdrawal.NewRepository(pool, logger),
+	}
 }
