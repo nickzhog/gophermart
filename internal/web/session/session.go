@@ -27,18 +27,24 @@ const (
 	ContextKey SessionKey = "session"
 )
 
-func GetSessionIDFromCookie(r *http.Request) (string, error) {
+func GetSessionFromCookie(r *http.Request, rep Repository) (Session, error) {
 	sCookie, err := r.Cookie(CookieKey)
 	if err != nil {
-		return "", err
+		return Session{}, err
 	}
-	return sCookie.Value, nil
+	s, err := rep.FindByID(r.Context(), sCookie.Value)
+	if err != nil {
+		return Session{}, err
+	}
+	return s, nil
 }
 
 func PutSessionIDInCookie(w http.ResponseWriter, sID string) {
 	cookie := &http.Cookie{
-		Name:  CookieKey,
-		Value: sID,
+		Name:     CookieKey,
+		Value:    sID,
+		Path:     "/",
+		HttpOnly: true,
 	}
 	http.SetCookie(w, cookie)
 }
@@ -51,6 +57,6 @@ func GetSessionFromRequest(r *http.Request) (Session, bool) {
 	return s, true
 }
 
-func PutSessionInRequest(r *http.Request, s Session) {
-	r = r.WithContext(context.WithValue(r.Context(), ContextKey, s))
+func PutSessionInRequest(r *http.Request, s Session) *http.Request {
+	return r.WithContext(context.WithValue(r.Context(), ContextKey, s))
 }

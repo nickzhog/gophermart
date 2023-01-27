@@ -31,3 +31,13 @@ CREATE TABLE IF NOT EXISTS public.sessions (
     ip TEXT NOT NULL,
     is_active bool NOT NULL DEFAULT true
 );
+
+
+CREATE TABLE IF NOT EXISTS public.session_user (
+    session_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    loginned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_active bool NOT NULL DEFAULT true,
+	constraint session_id FOREIGN KEY (session_id) REFERENCES public.sessions (id),
+	constraint user_id FOREIGN KEY (user_id) REFERENCES public.users (id)
+);

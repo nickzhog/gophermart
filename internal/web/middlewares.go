@@ -3,14 +3,17 @@ package web
 import (
 	"net/http"
 
+	"github.com/nickzhog/gophermart/internal/entity/user"
 	"github.com/nickzhog/gophermart/internal/web/session"
 )
 
-func (h *HandlerData) createSession(r *http.Request) (session.Session, error) {
+func (h *HandlerData) createSession(w http.ResponseWriter, r *http.Request) (session.Session, error) {
 	s, err := h.Session.Create(r.Context(), r.UserAgent(), r.RemoteAddr)
 	if err != nil {
 		return session.Session{}, err
 	}
+	session.PutSessionIDInCookie(w, s.ID)
+
 	return s, nil
 }
 
@@ -19,28 +22,44 @@ func (h *HandlerData) HandleSession(next http.Handler) http.Handler {
 		var s session.Session
 		var err error
 
-		sID, err := session.GetSessionIDFromCookie(r)
+		s, err = session.GetSessionFromCookie(r, h.Session)
 		if err != nil {
-			s, err = h.createSession(r)
+			s, err = h.createSession(w, r)
 			if err != nil {
 				showError(w, err.Error(), http.StatusBadGateway)
 				return
 			}
-
-			session.PutSessionIDInCookie(w, s.ID)
-		} else {
-			s, err = h.Session.FindByID(r.Context(), sID)
-			if err != nil {
-				s, err = h.createSession(r)
-				if err != nil {
-					showError(w, err.Error(), http.StatusBadGateway)
-					return
-				}
-				session.PutSessionIDInCookie(w, s.ID)
-			}
 		}
 
-		session.PutSessionInRequest(r, s)
+		r = session.PutSessionInRequest(r, s)
+		next.ServeHTTP(w, r)
+	}
+
+	return http.HandlerFunc(fn)
+}
+
+func (h *HandlerData) HandleUserFromSession(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		s, ok := session.GetSessionFromRequest(r)
+		if !ok {
+			showError(w, "something is wrong", http.StatusBadGateway)
+			return
+		}
+
+		usrID, err := h.SessionAccount.FindUserForSession(r.Context(), s.ID)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		usr, err := h.User.FindByID(r.Context(), usrID)
+		if err != nil {
+			h.SessionAccount.Disable(r.Context(), s.ID)
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		r = user.PutUserInRequest(r, usr)
 		next.ServeHTTP(w, r)
 	}
 

@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"net/http"
 )
 
 type User struct {
@@ -17,4 +18,20 @@ type Repository interface {
 	FindByLogin(ctx context.Context, login string) (User, error)
 	FindByID(ctx context.Context, id string) (User, error)
 	Update(ctx context.Context, usr *User) error
+}
+
+type UserKey string
+
+const ContextKey UserKey = "user"
+
+func GetUserFromRequest(r *http.Request) (User, bool) {
+	s, exist := r.Context().Value(ContextKey).(User)
+	if !exist {
+		return User{}, false
+	}
+	return s, true
+}
+
+func PutUserInRequest(r *http.Request, usr User) *http.Request {
+	return r.WithContext(context.WithValue(r.Context(), ContextKey, usr))
 }
