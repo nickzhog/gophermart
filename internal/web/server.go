@@ -27,10 +27,12 @@ func StartServer(logger *logging.Logger, cfg *config.Config, reps repositories.R
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
-	// r.Use(h.logMiddleware)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/user", func(r chi.Router) {
+
+			r.Use(h.HandleSession)
+
 			r.Group(func(r chi.Router) {
 				r.Use(h.RequireNotAuthMiddleware)
 

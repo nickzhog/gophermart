@@ -24,3 +24,10 @@ CREATE TABLE IF NOT EXISTS public.withdrawals (
 	constraint user_id FOREIGN KEY (user_id) REFERENCES public.users (id)
 );
 
+CREATE TABLE IF NOT EXISTS public.sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    user_agent TEXT NOT NULL,
+    ip TEXT NOT NULL,
+    is_active bool NOT NULL DEFAULT true
+);
