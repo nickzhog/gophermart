@@ -22,9 +22,11 @@ func (r *repository) Create(ctx context.Context, usr *User) error {
 		    (login, password_hash) 
 		VALUES 
 		    ($1, $2) 
-		RETURNING id
+		RETURNING id, balance
 	`
-	err := r.client.QueryRow(ctx, q, usr.Login, usr.PasswordHash).Scan(&usr.ID)
+	err := r.client.QueryRow(ctx, q, usr.Login, usr.PasswordHash).
+		Scan(&usr.ID, &usr.Balance)
+	usr.BalanceFloat = 0
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -41,7 +43,7 @@ func (r *repository) Create(ctx context.Context, usr *User) error {
 func (r *repository) FindByLogin(ctx context.Context, login string) (User, error) {
 	q := `
 	SELECT
-	 id, password_hash, balance, withdrawn_amount
+	 id, password_hash, balance
 	FROM public.users WHERE login = $1
 	`
 
@@ -63,7 +65,7 @@ func (r *repository) FindByLogin(ctx context.Context, login string) (User, error
 func (r *repository) FindByID(ctx context.Context, id string) (User, error) {
 	q := `
 	SELECT
-	 login, password_hash, balance, withdrawn_amount
+	 login, password_hash, balance
 	FROM public.users WHERE id = $1
 	`
 
@@ -89,13 +91,13 @@ func (r *repository) Update(ctx context.Context, usr *User) error {
 	q := `
 		UPDATE public.users 
 		SET
-		 balance = $1, 
-		 withdraw_amount = $2
+		 balance = $1,
+		 password_hash = $2,
 		WHERE id = $3
 	`
 
 	_, err := r.client.Exec(ctx, q,
-		usr.Balance, usr.ID)
+		usr.Balance, usr.PasswordHash, usr.ID)
 
 	return err
 }
