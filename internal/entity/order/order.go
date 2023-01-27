@@ -2,7 +2,6 @@ package order
 
 import (
 	"context"
-	"strconv"
 	"time"
 )
 
@@ -25,15 +24,7 @@ type Order struct {
 }
 
 type Repository interface {
-	Create(ctx context.Context) (Order, error)
+	Create(ctx context.Context, o *Order) error
 	FindForUser(ctx context.Context, usrID string) ([]Order, error)
-	Update(ctx context.Context, o Order) error
-}
-
-func (o *Order) ParseFloats() (err error) {
-	if o.AccrualFloat, err = strconv.ParseFloat(o.Accrual, 64); err != nil {
-		return
-	}
-	o.SumFloat, err = strconv.ParseFloat(o.Sum, 64)
-	return
+	Update(ctx context.Context, o *Order) error
 }
