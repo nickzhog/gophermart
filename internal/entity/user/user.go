@@ -2,7 +2,10 @@ package user
 
 import (
 	"context"
+	"errors"
 	"net/http"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -23,6 +26,23 @@ type Repository interface {
 type UserKey string
 
 const ContextKey UserKey = "user"
+
+func NewUser(login, password string) (User, error) {
+	if len(login) < 1 || len(password) < 1 {
+		return User{}, errors.New("login or password is empty")
+	}
+
+	phash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return User{}, err
+	}
+
+	var usr User
+	usr.Login = login
+	usr.PasswordHash = string(phash)
+
+	return usr, nil
+}
 
 func GetUserFromRequest(r *http.Request) (User, bool) {
 	s, exist := r.Context().Value(ContextKey).(User)

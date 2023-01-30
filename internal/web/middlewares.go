@@ -26,7 +26,7 @@ func (h *HandlerData) HandleSession(next http.Handler) http.Handler {
 		if err != nil {
 			s, err = h.createSession(w, r)
 			if err != nil {
-				showError(w, err.Error(), http.StatusBadGateway)
+				showError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -42,7 +42,7 @@ func (h *HandlerData) HandleUserFromSession(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		s, ok := session.GetSessionFromRequest(r)
 		if !ok {
-			showError(w, "something is wrong", http.StatusBadGateway)
+			showError(w, "something is wrong", http.StatusInternalServerError)
 			return
 		}
 
@@ -68,7 +68,11 @@ func (h *HandlerData) HandleUserFromSession(next http.Handler) http.Handler {
 
 func (h *HandlerData) RequireAuthMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		// todo
+		_, exist := user.GetUserFromRequest(r)
+		if !exist {
+			showError(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 		next.ServeHTTP(w, r)
 	}
 
@@ -77,7 +81,11 @@ func (h *HandlerData) RequireAuthMiddleware(next http.Handler) http.Handler {
 
 func (h *HandlerData) RequireNotAuthMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		// todo
+		_, exist := user.GetUserFromRequest(r)
+		if exist {
+			showError(w, "Forbidden", http.StatusForbidden)
+			return
+		}
 		next.ServeHTTP(w, r)
 	}
 
