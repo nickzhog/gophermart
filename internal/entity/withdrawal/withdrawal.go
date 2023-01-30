@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 )
 
 type Withdrawal struct {
-	ID          string `json:"order_id,omitempty"`
-	UserID      string `json:"user_id,omitempty"`
-	Sum         string `json:"sum,omitempty"`
-	SumFloat    float64
+	ID          string    `json:"order,omitempty"`
+	UserID      string    `json:"-"`
+	Sum         string    `json:"-"`
+	SumFloat    float64   `json:"sum,omitempty"`
 	ProcessedAt time.Time `json:"processed_at,omitempty"`
 }
 
@@ -42,8 +43,14 @@ func NewWithdrawal(orderID, usrID string, sum float64) (Withdrawal, error) {
 		UserID: usrID,
 		Sum:    fmt.Sprintf("%g", sum),
 	}
-	if len(orderID) < 1 {
-		return Withdrawal{}, errors.New("empty order_id")
+	idInt, err := strconv.Atoi(orderID)
+	if err != nil {
+		return Withdrawal{}, err
 	}
+
+	if idInt < 1 {
+		return Withdrawal{}, errors.New("wrong order")
+	}
+
 	return w, nil
 }

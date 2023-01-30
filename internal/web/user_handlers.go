@@ -48,8 +48,7 @@ func (h *HandlerData) registerHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	w.Write([]byte("regiteration complete"))
+	writeAnswer(w, "regiteration complete", http.StatusOK)
 }
 
 // аутентификация пользователя
@@ -133,6 +132,7 @@ func (h *HandlerData) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(orders)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -156,6 +156,7 @@ func (h *HandlerData) balanceHandler(w http.ResponseWriter, r *http.Request) {
 	m["current"] = usr.BalanceFloat
 	m["withdrawn"] = withdrawn
 
+	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(m)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
@@ -202,5 +203,21 @@ func (h *HandlerData) withdrawActionHandler(w http.ResponseWriter, r *http.Reque
 
 // получение информации о выводе средств с накопительного счёта пользователем
 func (h *HandlerData) withdrawalsHandler(w http.ResponseWriter, r *http.Request) {
+	usr := user.GetUserFromRequest(r)
+	withdrawals, err := h.Withdrawal.FindForUser(r.Context(), usr.ID)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(withdrawals) < 1 {
+		writeAnswer(w, "no orders", http.StatusNoContent)
+		return
+	}
 
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(withdrawals)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
