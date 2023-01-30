@@ -7,14 +7,10 @@ import (
 
 	"github.com/nickzhog/gophermart/internal/entity/order"
 	"github.com/nickzhog/gophermart/internal/entity/user"
+	"github.com/nickzhog/gophermart/internal/entity/withdrawal"
 	"github.com/nickzhog/gophermart/internal/web/session"
 	"golang.org/x/crypto/bcrypt"
 )
-
-type LoginPassword struct {
-	Login    string `json:"login,omitempty"`
-	Password string `json:"password,omitempty"`
-}
 
 // регистрация пользователя
 func (h *HandlerData) registerHandler(w http.ResponseWriter, r *http.Request) {
@@ -23,8 +19,7 @@ func (h *HandlerData) registerHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	var authData LoginPassword
-	err = json.Unmarshal(body, &authData)
+	authData, err := user.ParseAuthRequest(body)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusBadRequest)
 		return
@@ -64,8 +59,7 @@ func (h *HandlerData) loginHandler(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	var authData LoginPassword
-	err = json.Unmarshal(body, &authData)
+	authData, err := user.ParseAuthRequest(body)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusBadRequest)
 		return
@@ -148,12 +142,62 @@ func (h *HandlerData) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
 // получение текущего баланса счёта баллов лояльности пользователя
 func (h *HandlerData) balanceHandler(w http.ResponseWriter, r *http.Request) {
+	usr := user.GetUserFromRequest(r)
+	withdrawals, err := h.Withdrawal.FindForUser(r.Context(), usr.ID)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var withdrawn float64
+	for _, v := range withdrawals {
+		withdrawn += v.SumFloat
+	}
+	m := make(map[string]interface{})
+	m["current"] = usr.BalanceFloat
+	m["withdrawn"] = withdrawn
 
+	err = json.NewEncoder(w).Encode(m)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // запрос на списание баллов с накопительного счёта в счёт оплаты нового заказа
 func (h *HandlerData) withdrawActionHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	wReq, err := withdrawal.ParseWithdrawalRequest(body)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	usr := user.GetUserFromRequest(r)
+	if usr.BalanceFloat < wReq.Sum {
+		writeError(w, "not enough balance", http.StatusPaymentRequired)
+		return
+	}
+	wdl, err := withdrawal.NewWithdrawal(wReq.Order, usr.ID, wReq.Sum)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	_, err = h.Withdrawal.FindByID(r.Context(), wdl.ID)
+	if err == nil {
+		writeError(w, "order already used", http.StatusConflict)
+		return
+	}
 
+	err = h.Withdrawal.Create(r.Context(), &wdl)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	writeAnswer(w, "withdrawal succeeded", http.StatusOK)
 }
 
 // получение информации о выводе средств с накопительного счёта пользователем

@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -26,6 +27,20 @@ type Repository interface {
 type UserKey string
 
 const ContextKey UserKey = "user"
+
+type AuthRequest struct {
+	Login    string `json:"login,omitempty"`
+	Password string `json:"password,omitempty"`
+}
+
+func ParseAuthRequest(data []byte) (AuthRequest, error) {
+	var authData AuthRequest
+	err := json.Unmarshal(data, &authData)
+	if err != nil {
+		return AuthRequest{}, err
+	}
+	return authData, nil
+}
 
 func NewUser(login, password string) (User, error) {
 	if len(login) < 1 || len(password) < 1 {

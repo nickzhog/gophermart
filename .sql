@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
 );
 
 CREATE TABLE IF NOT EXISTS public.withdrawals (
-    id UUID PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     user_id UUID NOT NULL,
     sum TEXT NOT NULL,
 	processed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
