@@ -128,7 +128,22 @@ func (h *HandlerData) newOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 // получение списка загруженных пользователем номеров заказов, статусов их обработки и информации о начислениях
 func (h *HandlerData) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
+	usr := user.GetUserFromRequest(r)
+	orders, err := h.Order.FindForUser(r.Context(), usr.ID)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(orders) < 1 {
+		writeAnswer(w, "no orders", http.StatusNoContent)
+		return
+	}
 
+	err = json.NewEncoder(w).Encode(orders)
+	if err != nil {
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // получение текущего баланса счёта баллов лояльности пользователя

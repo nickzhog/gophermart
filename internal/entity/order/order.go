@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 )
 
@@ -15,14 +16,14 @@ const (
 )
 
 type Order struct {
-	ID           string `json:"id,omitempty"`
-	UserID       string `json:"user_id,omitempty"`
-	Status       string `json:"status,omitempty"`
-	Accrual      string `json:"accrual,omitempty"`
-	AccrualFloat float64
-	Sum          string `json:"sum,omitempty"`
-	SumFloat     float64
-	UploadAt     time.Time `json:"upload_at,omitempty"`
+	ID           string    `json:"number"`
+	UserID       string    `json:"-"`
+	Status       string    `json:"status"`
+	Accrual      string    `json:"-"`
+	AccrualFloat float64   `json:"accrual"`
+	Sum          string    `json:"-"`
+	SumFloat     float64   `json:"-"`
+	UploadAt     time.Time `json:"uploaded_at"`
 }
 
 type Repository interface {
@@ -32,18 +33,17 @@ type Repository interface {
 	Update(ctx context.Context, o *Order) error
 }
 
-func IsValidID(id int64) bool {
-	if id < 1 {
-		return false
+func NewOrder(id, usrID string) (Order, error) {
+	if len(id) < 1 || len(usrID) < 1 {
+		return Order{}, errors.New("wrong data")
 	}
 
-	return true
-}
-
-func NewOrder(id, usrID string) (Order, error) {
-
-	if len(id) < 1 || len(usrID) < 1 {
-		return Order{}, errors.New("login or password is empty")
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		return Order{}, err
+	}
+	if idInt < 1 {
+		return Order{}, errors.New("wrong data")
 	}
 
 	o := Order{
