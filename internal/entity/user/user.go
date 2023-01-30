@@ -44,12 +44,18 @@ func NewUser(login, password string) (User, error) {
 	return usr, nil
 }
 
-func GetUserFromRequest(r *http.Request) (User, bool) {
+func IsAuthenticated(r *http.Request) bool {
+	_, exist := r.Context().Value(ContextKey).(User)
+
+	return exist
+}
+
+func GetUserFromRequest(r *http.Request) User {
 	s, exist := r.Context().Value(ContextKey).(User)
 	if !exist {
-		return User{}, false
+		return User{}
 	}
-	return s, true
+	return s
 }
 
 func PutUserInRequest(r *http.Request, usr User) *http.Request {

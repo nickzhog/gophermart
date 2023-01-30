@@ -49,12 +49,12 @@ func PutSessionIDInCookie(w http.ResponseWriter, sID string) {
 	http.SetCookie(w, cookie)
 }
 
-func GetSessionFromRequest(r *http.Request) (Session, bool) {
+func GetSessionFromRequest(r *http.Request) Session {
 	s, exist := r.Context().Value(ContextKey).(Session)
 	if !exist {
-		return Session{}, false
+		return Session{}
 	}
-	return s, true
+	return s
 }
 
 func PutSessionInRequest(r *http.Request, s Session) *http.Request {

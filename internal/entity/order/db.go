@@ -19,13 +19,13 @@ type repository struct {
 func (r *repository) Create(ctx context.Context, o *Order) error {
 	q := `
 		INSERT INTO public.orders 
-		    (user_id, accrual, sum) 
+		    (id, user_id, accrual, sum) 
 		VALUES 
-		    ($1, $2, $3) 
-		RETURNING id, status, upload_at
+		    ($1, $2, $3, $4) 
+		RETURNING status, upload_at
 	`
-	err := r.client.QueryRow(ctx, q, o.UserID, o.Accrual, o.Sum).
-		Scan(&o.ID, &o.Status, &o.UploadAt)
+	err := r.client.QueryRow(ctx, q, o.ID, o.UserID, o.Accrual, o.Sum).
+		Scan(&o.Status, &o.UploadAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -37,6 +37,35 @@ func (r *repository) Create(ctx context.Context, o *Order) error {
 		r.logger.Error("err:", err.Error())
 	}
 	return err
+}
+
+func (r *repository) FindByID(ctx context.Context, id string) (Order, error) {
+	q := `
+	SELECT
+		id, user_id, status, 
+		accrual, sum, upload_at
+	FROM
+		public.orders 
+	WHERE 
+		id = $1
+	`
+
+	var o Order
+	err := r.client.QueryRow(ctx, q, id).
+		Scan(&o.ID, &o.UserID, &o.Status,
+			&o.Accrual, &o.Sum, &o.UploadAt)
+	if err != nil {
+		return Order{}, err
+	}
+
+	if o.SumFloat, err = strconv.ParseFloat(o.Sum, 64); err != nil {
+		return Order{}, err
+	}
+	if o.AccrualFloat, err = strconv.ParseFloat(o.Accrual, 64); err != nil {
+		return Order{}, err
+	}
+
+	return o, nil
 }
 
 func (r *repository) FindForUser(ctx context.Context, usrID string) ([]Order, error) {

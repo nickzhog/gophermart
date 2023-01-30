@@ -42,11 +42,8 @@ func StartServer(logger *logging.Logger, cfg *config.Config, reps repositories.R
 			r.Group(func(r chi.Router) {
 				r.Use(h.RequireAuthMiddleware)
 
-				//загрузка пользователем номера заказа для расчёта
-				r.Post("/orders", h.ordersActionHandler)
-
-				//получение списка загруженных пользователем номеров заказов
-				r.Get("/orders", h.ordersHandler)
+				r.Post("/orders", h.newOrderHandler)
+				r.Get("/orders", h.getOrdersHandler)
 
 				r.Get("/balance", h.balanceHandler)
 				r.Post("/balance/withdraw", h.withdrawActionHandler)

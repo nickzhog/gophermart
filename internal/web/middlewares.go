@@ -26,7 +26,7 @@ func (h *HandlerData) HandleSession(next http.Handler) http.Handler {
 		if err != nil {
 			s, err = h.createSession(w, r)
 			if err != nil {
-				showError(w, err.Error(), http.StatusInternalServerError)
+				writeError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -40,11 +40,7 @@ func (h *HandlerData) HandleSession(next http.Handler) http.Handler {
 
 func (h *HandlerData) HandleUserFromSession(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		s, ok := session.GetSessionFromRequest(r)
-		if !ok {
-			showError(w, "something is wrong", http.StatusInternalServerError)
-			return
-		}
+		s := session.GetSessionFromRequest(r)
 
 		usrID, err := h.SessionAccount.FindUserForSession(r.Context(), s.ID)
 		if err != nil {
@@ -68,9 +64,8 @@ func (h *HandlerData) HandleUserFromSession(next http.Handler) http.Handler {
 
 func (h *HandlerData) RequireAuthMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		_, exist := user.GetUserFromRequest(r)
-		if !exist {
-			showError(w, "Unauthorized", http.StatusUnauthorized)
+		if !user.IsAuthenticated(r) {
+			writeError(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -81,9 +76,8 @@ func (h *HandlerData) RequireAuthMiddleware(next http.Handler) http.Handler {
 
 func (h *HandlerData) RequireNotAuthMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		_, exist := user.GetUserFromRequest(r)
-		if exist {
-			showError(w, "Forbidden", http.StatusForbidden)
+		if user.IsAuthenticated(r) {
+			writeError(w, "Forbidden", http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)
