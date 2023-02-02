@@ -1,4 +1,4 @@
-package session_account
+package sessionaccount
 
 import (
 	"context"
