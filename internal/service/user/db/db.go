@@ -1,13 +1,13 @@
-package user
+package db
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/jackc/pgconn"
 	"github.com/nickzhog/gophermart/internal/postgres"
+	"github.com/nickzhog/gophermart/internal/service/user"
 	"github.com/nickzhog/gophermart/pkg/logging"
 )
 
@@ -16,17 +16,16 @@ type repository struct {
 	logger *logging.Logger
 }
 
-func (r *repository) Create(ctx context.Context, usr *User) error {
+func (r *repository) Create(ctx context.Context, usr *user.User) error {
 	q := `
 		INSERT INTO public.users 
 		    (login, password_hash) 
 		VALUES 
 		    ($1, $2) 
-		RETURNING id, balance
+		RETURNING id
 	`
 	err := r.client.QueryRow(ctx, q, usr.Login, usr.PasswordHash).
-		Scan(&usr.ID, &usr.Balance)
-	usr.BalanceFloat = 0
+		Scan(&usr.ID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -40,76 +39,60 @@ func (r *repository) Create(ctx context.Context, usr *User) error {
 	return err
 }
 
-func (r *repository) FindByLogin(ctx context.Context, login string) (User, error) {
+func (r *repository) FindByLogin(ctx context.Context, login string) (user.User, error) {
 	q := `
 	SELECT
-	 id, password_hash, balance
+	 id, password_hash
 	FROM public.users WHERE login = $1
 	`
 
-	var usr User
+	var usr user.User
 	err := r.client.QueryRow(ctx, q, login).
-		Scan(&usr.ID, &usr.PasswordHash, &usr.Balance)
+		Scan(&usr.ID, &usr.PasswordHash)
 	if err != nil {
-		return User{}, err
-	}
-
-	usr.BalanceFloat, err = strconv.ParseFloat(usr.Balance, 64)
-	if err != nil {
-		return User{}, err
+		return user.User{}, err
 	}
 
 	return usr, nil
 }
 
-func (r *repository) FindByID(ctx context.Context, id string) (User, error) {
+func (r *repository) FindByID(ctx context.Context, id string) (user.User, error) {
 	q := `
 	SELECT
-	 login, password_hash, balance
+	 login, password_hash
 	FROM public.users WHERE id = $1
 	`
 
-	var usr User
+	var usr user.User
 	err := r.client.QueryRow(ctx, q, id).
-		Scan(&usr.Login, &usr.PasswordHash, &usr.Balance)
+		Scan(&usr.Login, &usr.PasswordHash)
 	if err != nil {
-		return User{}, err
-	}
-
-	usr.BalanceFloat, err = strconv.ParseFloat(usr.Balance, 64)
-	if err != nil {
-		return User{}, err
+		return user.User{}, err
 	}
 
 	return usr, nil
 }
 
-func (r *repository) Update(ctx context.Context, usr *User) error {
-
-	usr.Balance = fmt.Sprintf("%g", usr.BalanceFloat)
-
+func (r *repository) Update(ctx context.Context, usr *user.User) error {
 	q := `
 		UPDATE public.users 
 		SET
-		 balance = $1,
-		 password_hash = $2,
-		WHERE id = $3
+		 password_hash = $1
+		WHERE id = $2
 	`
 
-	_, err := r.client.Exec(ctx, q,
-		usr.Balance, usr.PasswordHash, usr.ID)
+	_, err := r.client.Exec(ctx, q, usr.PasswordHash, usr.ID)
 
 	return err
 }
 
-func NewRepository(client postgres.Client, logger *logging.Logger) Repository {
+func NewRepository(client postgres.Client, logger *logging.Logger) user.Repository {
 	q := `
 	CREATE TABLE IF NOT EXISTS public.users (
 		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 		create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		login TEXT NOT NULL,
-		password_hash TEXT NOT NULL, 
-		balance TEXT NOT NULL DEFAULT '0'
+		password_hash TEXT NOT NULL
 	);
 	`
 	_, err := client.Exec(context.TODO(), q)

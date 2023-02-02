@@ -5,10 +5,13 @@ import (
 	"time"
 
 	"github.com/nickzhog/gophermart/internal/config"
-	"github.com/nickzhog/gophermart/internal/entity/order"
-	"github.com/nickzhog/gophermart/internal/entity/user"
-	"github.com/nickzhog/gophermart/internal/entity/withdrawal"
 	"github.com/nickzhog/gophermart/internal/postgres"
+	"github.com/nickzhog/gophermart/internal/service/order"
+	orderdb "github.com/nickzhog/gophermart/internal/service/order/db"
+	"github.com/nickzhog/gophermart/internal/service/user"
+	userdb "github.com/nickzhog/gophermart/internal/service/user/db"
+	"github.com/nickzhog/gophermart/internal/service/withdrawal"
+	withdrawaldb "github.com/nickzhog/gophermart/internal/service/withdrawal/db"
 	"github.com/nickzhog/gophermart/internal/web/session"
 	"github.com/nickzhog/gophermart/internal/web/session_account"
 	"github.com/nickzhog/gophermart/pkg/logging"
@@ -39,9 +42,9 @@ func GetRepositories(logger *logging.Logger, cfg *config.Config) Repositories {
 		logger.Fatal(err)
 	}
 	return Repositories{
-		User:           user.NewRepository(pool, logger),
-		Order:          order.NewRepository(pool, logger),
-		Withdrawal:     withdrawal.NewRepository(pool, logger),
+		User:           userdb.NewRepository(pool, logger),
+		Order:          orderdb.NewRepository(pool, logger),
+		Withdrawal:     withdrawaldb.NewRepository(pool, logger),
 		Session:        session.NewRepository(pool, logger),
 		SessionAccount: session_account.NewRepository(pool, logger),
 	}

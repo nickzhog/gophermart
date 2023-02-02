@@ -1,4 +1,4 @@
-package withdrawal
+package db
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/nickzhog/gophermart/internal/postgres"
+	"github.com/nickzhog/gophermart/internal/service/withdrawal"
 	"github.com/nickzhog/gophermart/pkg/logging"
 )
 
@@ -16,7 +17,7 @@ type repository struct {
 	logger *logging.Logger
 }
 
-func (r *repository) Create(ctx context.Context, w *Withdrawal) error {
+func (r *repository) Create(ctx context.Context, w *withdrawal.Withdrawal) error {
 
 	w.Sum = fmt.Sprintf("%g", w.SumFloat)
 	q := `
@@ -40,7 +41,7 @@ func (r *repository) Create(ctx context.Context, w *Withdrawal) error {
 	return err
 }
 
-func (r *repository) FindForUser(ctx context.Context, usrID string) ([]Withdrawal, error) {
+func (r *repository) FindForUser(ctx context.Context, usrID string) ([]withdrawal.Withdrawal, error) {
 	q := `
 		SELECT 
 			id, user_id, sum, processed_at
@@ -53,10 +54,10 @@ func (r *repository) FindForUser(ctx context.Context, usrID string) ([]Withdrawa
 		return nil, err
 	}
 
-	wdls := make([]Withdrawal, 0)
+	wdls := make([]withdrawal.Withdrawal, 0)
 
 	for rows.Next() {
-		var w Withdrawal
+		var w withdrawal.Withdrawal
 
 		err = rows.Scan(&w.ID, &w.UserID, &w.Sum, &w.ProcessedAt)
 
@@ -78,29 +79,29 @@ func (r *repository) FindForUser(ctx context.Context, usrID string) ([]Withdrawa
 	return wdls, nil
 }
 
-func (r *repository) FindByID(ctx context.Context, id string) (Withdrawal, error) {
+func (r *repository) FindByID(ctx context.Context, id string) (withdrawal.Withdrawal, error) {
 	q := `
 	SELECT
 	 id, user_id, sum, processed_at
 	FROM public.withdrawals WHERE id = $1
 	`
 
-	var w Withdrawal
+	var w withdrawal.Withdrawal
 	err := r.client.QueryRow(ctx, q, id).
 		Scan(&w.ID, &w.UserID, &w.Sum)
 	if err != nil {
-		return Withdrawal{}, err
+		return withdrawal.Withdrawal{}, err
 	}
 
 	w.SumFloat, err = strconv.ParseFloat(w.Sum, 64)
 	if err != nil {
-		return Withdrawal{}, err
+		return withdrawal.Withdrawal{}, err
 	}
 
 	return w, nil
 }
 
-func NewRepository(client postgres.Client, logger *logging.Logger) Repository {
+func NewRepository(client postgres.Client, logger *logging.Logger) withdrawal.Repository {
 	q := `
 	CREATE TABLE IF NOT EXISTS public.withdrawals (
 		id TEXT PRIMARY KEY,

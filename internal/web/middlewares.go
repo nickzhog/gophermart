@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/nickzhog/gophermart/internal/entity/user"
+	"github.com/nickzhog/gophermart/internal/service/user"
 	"github.com/nickzhog/gophermart/internal/web/session"
 )
 
@@ -34,7 +34,7 @@ func (h *HandlerData) HandleSession(next http.Handler) http.Handler {
 			}
 		}
 
-		r = session.PutSessionInRequest(r, s)
+		r = session.PutSessionInRequest(r, s.ID)
 		next.ServeHTTP(w, r)
 	}
 
@@ -43,9 +43,9 @@ func (h *HandlerData) HandleSession(next http.Handler) http.Handler {
 
 func (h *HandlerData) HandleUserFromSession(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		s := session.GetSessionFromRequest(r)
+		sID := session.GetSessionIDFromRequest(r)
 
-		usrID, err := h.SessionAccount.FindUserForSession(r.Context(), s.ID)
+		usrID, err := h.SessionAccount.FindUserForSession(r.Context(), sID)
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
@@ -53,12 +53,12 @@ func (h *HandlerData) HandleUserFromSession(next http.Handler) http.Handler {
 
 		usr, err := h.User.FindByID(r.Context(), usrID)
 		if err != nil {
-			h.SessionAccount.Disable(r.Context(), s.ID)
+			h.SessionAccount.Disable(r.Context(), sID)
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		r = user.PutUserInRequest(r, usr)
+		r = user.PutUserInRequest(r, usr.ID)
 		next.ServeHTTP(w, r)
 	}
 
@@ -69,18 +69,6 @@ func (h *HandlerData) RequireAuthMiddleware(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		if !user.IsAuthenticated(r) {
 			writeError(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		next.ServeHTTP(w, r)
-	}
-
-	return http.HandlerFunc(fn)
-}
-
-func (h *HandlerData) RequireNotAuthMiddleware(next http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		if user.IsAuthenticated(r) {
-			writeError(w, "Forbidden", http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)

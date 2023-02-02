@@ -10,11 +10,9 @@ import (
 )
 
 type User struct {
-	ID           string  `json:"id,omitempty"`
-	Login        string  `json:"login,omitempty"`
-	PasswordHash string  `json:"password_hash,omitempty"`
-	Balance      string  `json:"balance,omitempty"`
-	BalanceFloat float64 `json:"balance_float,omitempty"`
+	ID           string `json:"id,omitempty"`
+	Login        string `json:"login,omitempty"`
+	PasswordHash string `json:"password_hash,omitempty"`
 }
 
 type Repository interface {
@@ -24,9 +22,9 @@ type Repository interface {
 	Update(ctx context.Context, usr *User) error
 }
 
-type UserKey string
+type UserID string
 
-const ContextKey UserKey = "user"
+const ContextKey UserID = "user"
 
 type AuthRequest struct {
 	Login    string `json:"login,omitempty"`
@@ -60,19 +58,19 @@ func NewUser(login, password string) (User, error) {
 }
 
 func IsAuthenticated(r *http.Request) bool {
-	_, exist := r.Context().Value(ContextKey).(User)
+	_, exist := r.Context().Value(ContextKey).(string)
 
 	return exist
 }
 
-func GetUserFromRequest(r *http.Request) User {
-	s, exist := r.Context().Value(ContextKey).(User)
+func GetUserIDFromRequest(r *http.Request) string {
+	s, exist := r.Context().Value(ContextKey).(string)
 	if !exist {
-		return User{}
+		return ""
 	}
 	return s
 }
 
-func PutUserInRequest(r *http.Request, usr User) *http.Request {
-	return r.WithContext(context.WithValue(r.Context(), ContextKey, usr))
+func PutUserInRequest(r *http.Request, usrID string) *http.Request {
+	return r.WithContext(context.WithValue(r.Context(), ContextKey, usrID))
 }

@@ -10,8 +10,9 @@ import (
 )
 
 type Withdrawal struct {
-	ID          string    `json:"order,omitempty"`
+	ID          string    `json:"-"`
 	UserID      string    `json:"-"`
+	OrderID     string    `json:"order"`
 	Sum         string    `json:"-"`
 	SumFloat    float64   `json:"sum,omitempty"`
 	ProcessedAt time.Time `json:"processed_at,omitempty"`
@@ -53,4 +54,12 @@ func NewWithdrawal(orderID, usrID string, sum float64) (Withdrawal, error) {
 	}
 
 	return w, nil
+}
+
+func SumForWithdrawals(wdls []Withdrawal) float64 {
+	answer := 0.0
+	for _, v := range wdls {
+		answer += v.SumFloat
+	}
+	return answer
 }

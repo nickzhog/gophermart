@@ -5,9 +5,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/nickzhog/gophermart/internal/entity/order"
-	"github.com/nickzhog/gophermart/internal/entity/user"
-	"github.com/nickzhog/gophermart/internal/entity/withdrawal"
+	"github.com/nickzhog/gophermart/internal/service/order"
+	"github.com/nickzhog/gophermart/internal/service/user"
+	"github.com/nickzhog/gophermart/internal/service/withdrawal"
 	"github.com/nickzhog/gophermart/internal/web/session"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -41,9 +41,11 @@ func (h *HandlerData) registerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s := session.GetSessionFromRequest(r)
+	sID := session.GetSessionIDFromRequest(r)
 
-	err = h.SessionAccount.Create(r.Context(), usr.ID, s.ID)
+	h.SessionAccount.Disable(r.Context(), sID)
+
+	err = h.SessionAccount.Create(r.Context(), usr.ID, sID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -74,9 +76,11 @@ func (h *HandlerData) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s := session.GetSessionFromRequest(r)
+	sID := session.GetSessionIDFromRequest(r)
 
-	err = h.SessionAccount.Create(r.Context(), usr.ID, s.ID)
+	h.SessionAccount.Disable(r.Context(), sID)
+
+	err = h.SessionAccount.Create(r.Context(), usr.ID, sID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -93,15 +97,15 @@ func (h *HandlerData) newOrderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	usr := user.GetUserFromRequest(r)
-	order, err := order.NewOrder(string(body), usr.ID)
+	usrID := user.GetUserIDFromRequest(r)
+	order, err := order.NewOrder(string(body), usrID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	if o, err := h.Order.FindByID(r.Context(), string(body)); err == nil {
-		if o.UserID == usr.ID {
+		if o.UserID == usrID {
 			writeAnswer(w, "already have that order", http.StatusOK)
 			return
 		} else {
@@ -121,8 +125,8 @@ func (h *HandlerData) newOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 // получение списка загруженных пользователем номеров заказов, статусов их обработки и информации о начислениях
 func (h *HandlerData) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
-	usr := user.GetUserFromRequest(r)
-	orders, err := h.Order.FindForUser(r.Context(), usr.ID)
+	usrID := user.GetUserIDFromRequest(r)
+	orders, err := h.Order.FindForUser(r.Context(), usrID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -142,18 +146,18 @@ func (h *HandlerData) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
 // получение текущего баланса счёта баллов лояльности пользователя
 func (h *HandlerData) balanceHandler(w http.ResponseWriter, r *http.Request) {
-	usr := user.GetUserFromRequest(r)
-	withdrawals, err := h.Withdrawal.FindForUser(r.Context(), usr.ID)
+	usrID := user.GetUserIDFromRequest(r)
+	withdrawals, err := h.Withdrawal.FindForUser(r.Context(), usrID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var withdrawn float64
-	for _, v := range withdrawals {
-		withdrawn += v.SumFloat
-	}
+	withdrawn := withdrawal.SumForWithdrawals(withdrawals)
+
+	orders, _ := h.Order.FindForUser(r.Context(), usrID)
+
 	m := make(map[string]interface{})
-	m["current"] = usr.BalanceFloat
+	m["current"] = order.AccrualSumForOrders(orders) - withdrawn
 	m["withdrawn"] = withdrawn
 
 	w.Header().Set("Content-Type", "application/json")
@@ -176,12 +180,19 @@ func (h *HandlerData) withdrawActionHandler(w http.ResponseWriter, r *http.Reque
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	usr := user.GetUserFromRequest(r)
-	if usr.BalanceFloat < wReq.Sum {
+	usrID := user.GetUserIDFromRequest(r)
+
+	withdrawals, _ := h.Withdrawal.FindForUser(r.Context(), usrID)
+	orders, _ := h.Order.FindForUser(r.Context(), usrID)
+
+	withdrawn := withdrawal.SumForWithdrawals(withdrawals)
+	balance := order.AccrualSumForOrders(orders) - withdrawn
+	if balance < wReq.Sum {
 		writeError(w, "not enough balance", http.StatusPaymentRequired)
 		return
 	}
-	wdl, err := withdrawal.NewWithdrawal(wReq.Order, usr.ID, wReq.Sum)
+
+	wdl, err := withdrawal.NewWithdrawal(wReq.Order, usrID, wReq.Sum)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
@@ -203,8 +214,8 @@ func (h *HandlerData) withdrawActionHandler(w http.ResponseWriter, r *http.Reque
 
 // получение информации о выводе средств с накопительного счёта пользователем
 func (h *HandlerData) withdrawalsHandler(w http.ResponseWriter, r *http.Request) {
-	usr := user.GetUserFromRequest(r)
-	withdrawals, err := h.Withdrawal.FindForUser(r.Context(), usr.ID)
+	usrID := user.GetUserIDFromRequest(r)
+	withdrawals, err := h.Withdrawal.FindForUser(r.Context(), usrID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return

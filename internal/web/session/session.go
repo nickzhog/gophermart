@@ -7,12 +7,11 @@ import (
 )
 
 type Session struct {
-	ID         string
-	CreateAt   time.Time
-	UserAgent  string
-	IP         string
-	IsLoginned bool
-	IsActive   bool
+	ID        string
+	CreateAt  time.Time
+	UserAgent string
+	IP        string
+	IsActive  bool
 }
 
 type Repository interface {
@@ -20,11 +19,11 @@ type Repository interface {
 	FindByID(ctx context.Context, id string) (Session, error)
 }
 
-type SessionKey string
+type SessionID string
 
 const (
-	CookieKey             = "session"
-	ContextKey SessionKey = "session"
+	CookieKey            = "session"
+	ContextKey SessionID = "session"
 )
 
 func GetSessionFromCookie(r *http.Request, rep Repository) (Session, error) {
@@ -49,14 +48,14 @@ func PutSessionIDInCookie(w http.ResponseWriter, sID string) {
 	http.SetCookie(w, cookie)
 }
 
-func GetSessionFromRequest(r *http.Request) Session {
-	s, exist := r.Context().Value(ContextKey).(Session)
+func GetSessionIDFromRequest(r *http.Request) string {
+	s, exist := r.Context().Value(ContextKey).(string)
 	if !exist {
-		return Session{}
+		return ""
 	}
 	return s
 }
 
-func PutSessionInRequest(r *http.Request, s Session) *http.Request {
-	return r.WithContext(context.WithValue(r.Context(), ContextKey, s))
+func PutSessionInRequest(r *http.Request, sID string) *http.Request {
+	return r.WithContext(context.WithValue(r.Context(), ContextKey, sID))
 }

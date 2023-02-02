@@ -1,4 +1,4 @@
-package order
+package db
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/nickzhog/gophermart/internal/postgres"
+	"github.com/nickzhog/gophermart/internal/service/order"
 	"github.com/nickzhog/gophermart/pkg/logging"
 )
 
@@ -16,15 +17,15 @@ type repository struct {
 	logger *logging.Logger
 }
 
-func (r *repository) Create(ctx context.Context, o *Order) error {
+func (r *repository) Create(ctx context.Context, o *order.Order) error {
 	q := `
 		INSERT INTO public.orders 
-		    (id, user_id, accrual, sum) 
+		    (id, user_id, accrual) 
 		VALUES 
-		    ($1, $2, $3, $4) 
+		    ($1, $2, $3) 
 		RETURNING status, upload_at
 	`
-	err := r.client.QueryRow(ctx, q, o.ID, o.UserID, o.Accrual, o.Sum).
+	err := r.client.QueryRow(ctx, q, o.ID, o.UserID, o.Accrual).
 		Scan(&o.Status, &o.UploadAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -39,40 +40,37 @@ func (r *repository) Create(ctx context.Context, o *Order) error {
 	return err
 }
 
-func (r *repository) FindByID(ctx context.Context, id string) (Order, error) {
+func (r *repository) FindByID(ctx context.Context, id string) (order.Order, error) {
 	q := `
 	SELECT
 		id, user_id, status, 
-		accrual, sum, upload_at
+		accrual, upload_at
 	FROM
 		public.orders 
 	WHERE 
 		id = $1
 	`
 
-	var o Order
+	var o order.Order
 	err := r.client.QueryRow(ctx, q, id).
 		Scan(&o.ID, &o.UserID, &o.Status,
-			&o.Accrual, &o.Sum, &o.UploadAt)
+			&o.Accrual, &o.UploadAt)
 	if err != nil {
-		return Order{}, err
+		return order.Order{}, err
 	}
 
-	if o.SumFloat, err = strconv.ParseFloat(o.Sum, 64); err != nil {
-		return Order{}, err
-	}
 	if o.AccrualFloat, err = strconv.ParseFloat(o.Accrual, 64); err != nil {
-		return Order{}, err
+		return order.Order{}, err
 	}
 
 	return o, nil
 }
 
-func (r *repository) FindForUser(ctx context.Context, usrID string) ([]Order, error) {
+func (r *repository) FindForUser(ctx context.Context, usrID string) ([]order.Order, error) {
 	q := `
 		SELECT 
 			id, user_id, status, 
-			accrual, sum, upload_at
+			accrual, upload_at
 		FROM public.orders 
 		WHERE user_id = $1;
 	`
@@ -82,19 +80,15 @@ func (r *repository) FindForUser(ctx context.Context, usrID string) ([]Order, er
 		return nil, err
 	}
 
-	orders := make([]Order, 0)
+	orders := make([]order.Order, 0)
 
 	for rows.Next() {
-		var o Order
+		var o order.Order
 
 		err = rows.Scan(&o.ID, &o.UserID, &o.Status,
-			&o.Accrual, &o.Sum, &o.UploadAt)
+			&o.Accrual, &o.UploadAt)
 
 		if err != nil {
-			return nil, err
-		}
-
-		if o.SumFloat, err = strconv.ParseFloat(o.Sum, 64); err != nil {
 			return nil, err
 		}
 		if o.AccrualFloat, err = strconv.ParseFloat(o.Accrual, 64); err != nil {
@@ -111,10 +105,9 @@ func (r *repository) FindForUser(ctx context.Context, usrID string) ([]Order, er
 	return orders, nil
 }
 
-func (r *repository) Update(ctx context.Context, o *Order) error {
+func (r *repository) Update(ctx context.Context, o *order.Order) error {
 
 	o.Accrual = fmt.Sprintf("%g", o.AccrualFloat)
-	o.Sum = fmt.Sprintf("%g", o.SumFloat)
 
 	q := `
 		UPDATE public.orders 
@@ -131,14 +124,13 @@ func (r *repository) Update(ctx context.Context, o *Order) error {
 
 }
 
-func NewRepository(client postgres.Client, logger *logging.Logger) Repository {
+func NewRepository(client postgres.Client, logger *logging.Logger) order.Repository {
 	q := `
 	CREATE TABLE IF NOT EXISTS public.orders (
 		id TEXT PRIMARY KEY,
 		user_id UUID NOT NULL,
 		status TEXT NOT NULL DEFAULT 'NEW',
-		accrual TEXT NOT NULL,
-		sum TEXT NOT NULL,
+		accrual TEXT,
 		upload_at TIMESTAMP NOT NULL  DEFAULT CURRENT_TIMESTAMP,
 		constraint user_id FOREIGN KEY (user_id) REFERENCES public.users (id)
 	);

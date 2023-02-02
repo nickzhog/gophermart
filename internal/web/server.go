@@ -36,8 +36,6 @@ func StartServer(logger *logging.Logger, cfg *config.Config, reps repositories.R
 			r.Use(h.HandleSession)
 
 			r.Group(func(r chi.Router) {
-				r.Use(h.RequireNotAuthMiddleware)
-
 				r.Post("/register", h.registerHandler)
 				r.Post("/login", h.loginHandler)
 			})

@@ -21,8 +21,6 @@ type Order struct {
 	Status       string    `json:"status"`
 	Accrual      string    `json:"-"`
 	AccrualFloat float64   `json:"accrual"`
-	Sum          string    `json:"-"`
-	SumFloat     float64   `json:"-"`
 	UploadAt     time.Time `json:"uploaded_at"`
 }
 
@@ -42,15 +40,25 @@ func NewOrder(id, usrID string) (Order, error) {
 	if err != nil {
 		return Order{}, err
 	}
-	if idInt < 1 {
-		return Order{}, errors.New("wrong data")
+	if !ValidLuhn(idInt) {
+		return Order{}, errors.New("luhn check fail")
 	}
 
 	o := Order{
 		ID:      id,
 		UserID:  usrID,
-		Sum:     "0.0",
 		Accrual: "0.0",
 	}
 	return o, nil
+}
+
+func AccrualSumForOrders(ords []Order) float64 {
+	ans := 0.0
+	for _, o := range ords {
+		if o.Status != StatusProcessed {
+			continue
+		}
+		ans += o.AccrualFloat
+	}
+	return ans
 }
