@@ -15,20 +15,17 @@ type repository struct {
 	logger *logging.Logger
 }
 
-func (r *repository) Create(ctx context.Context, userAgent, ip string) (Session, error) {
+func (r *repository) Create(ctx context.Context, usrID string) (Session, error) {
 	q := `
 	INSERT INTO public.sessions 
-		(user_agent, ip) 
+		(user_id) 
 	VALUES 
-		($1, $2) 
-	RETURNING id, create_at, is_active
+		($1) 
+	RETURNING id, user_id, create_at, is_active
 	`
-	s := Session{
-		UserAgent: userAgent,
-		IP:        ip,
-	}
-	err := r.client.QueryRow(ctx, q, s.UserAgent, s.IP).
-		Scan(&s.ID, &s.CreateAt, &s.IsActive)
+	var s Session
+	err := r.client.QueryRow(ctx, q, usrID).
+		Scan(&s.ID, &s.UserID, &s.CreateAt, &s.IsActive)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -46,7 +43,7 @@ func (r *repository) Create(ctx context.Context, userAgent, ip string) (Session,
 func (r *repository) FindByID(ctx context.Context, id string) (Session, error) {
 	q := `
 	SELECT
-		id, create_at, useragent, ip, is_active
+		id, user_id, create_at, is_active
 	FROM 
 		public.session 
 	WHERE 
@@ -54,7 +51,7 @@ func (r *repository) FindByID(ctx context.Context, id string) (Session, error) {
 	`
 	var s Session
 	err := r.client.QueryRow(ctx, q, id).
-		Scan(&s.ID, &s.CreateAt, &s.UserAgent, &s.IP, &s.IsActive)
+		Scan(&s.ID, &s.UserID, &s.CreateAt, &s.IsActive)
 
 	if err != nil {
 		return Session{}, err
@@ -63,14 +60,27 @@ func (r *repository) FindByID(ctx context.Context, id string) (Session, error) {
 	return s, nil
 }
 
+func (r *repository) Disable(ctx context.Context, id string) error {
+	q := `
+		UPDATE 
+			public.sessions 
+		SET
+			is_active = false
+		WHERE 
+			id = $1
+	`
+	_, err := r.client.Exec(ctx, q, id)
+	return err
+}
+
 func NewRepository(client postgres.Client, logger *logging.Logger) Repository {
 	q := `
 	CREATE TABLE IF NOT EXISTS public.sessions (
 		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		user_id UUID NOT NULL,
 		create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		user_agent TEXT NOT NULL,
-		ip TEXT NOT NULL,
-		is_active bool NOT NULL DEFAULT true
+		is_active bool NOT NULL DEFAULT true,
+		CONSTRAINT user_id FOREIGN KEY (user_id) REFERENCES public.users (id)
 	);
 	`
 	_, err := client.Exec(context.TODO(), q)

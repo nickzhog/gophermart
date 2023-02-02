@@ -71,6 +71,6 @@ func GetUserIDFromRequest(r *http.Request) string {
 	return s
 }
 
-func PutUserInRequest(r *http.Request, usrID string) *http.Request {
+func PutUserIDInRequest(r *http.Request, usrID string) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), ContextKey, usrID))
 }

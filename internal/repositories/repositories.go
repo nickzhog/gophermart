@@ -13,7 +13,6 @@ import (
 	"github.com/nickzhog/gophermart/internal/service/withdrawal"
 	withdrawaldb "github.com/nickzhog/gophermart/internal/service/withdrawal/db"
 	"github.com/nickzhog/gophermart/internal/web/session"
-	sessionaccount "github.com/nickzhog/gophermart/internal/web/session_account"
 	"github.com/nickzhog/gophermart/pkg/logging"
 )
 
@@ -23,11 +22,10 @@ const (
 )
 
 type Repositories struct {
-	User           user.Repository
-	Order          order.Repository
-	Withdrawal     withdrawal.Repository
-	Session        session.Repository
-	SessionAccount sessionaccount.Repository
+	User       user.Repository
+	Order      order.Repository
+	Withdrawal withdrawal.Repository
+	Session    session.Repository
 }
 
 func GetRepositories(logger *logging.Logger, cfg *config.Config) Repositories {
@@ -42,10 +40,9 @@ func GetRepositories(logger *logging.Logger, cfg *config.Config) Repositories {
 		logger.Fatal(err)
 	}
 	return Repositories{
-		User:           userdb.NewRepository(pool, logger),
-		Order:          orderdb.NewRepository(pool, logger),
-		Withdrawal:     withdrawaldb.NewRepository(pool, logger),
-		Session:        session.NewRepository(pool, logger),
-		SessionAccount: sessionaccount.NewRepository(pool, logger),
+		User:       userdb.NewRepository(pool, logger),
+		Order:      orderdb.NewRepository(pool, logger),
+		Withdrawal: withdrawaldb.NewRepository(pool, logger),
+		Session:    session.NewRepository(pool, logger),
 	}
 }

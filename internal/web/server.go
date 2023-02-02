@@ -34,15 +34,12 @@ func StartServer(logger *logging.Logger, cfg *config.Config, reps repositories.R
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/user", func(r chi.Router) {
-
-			r.Use(h.HandleSession)
-
 			r.Group(func(r chi.Router) {
 				r.Post("/register", h.registerHandler)
 				r.Post("/login", h.loginHandler)
 			})
 			r.Group(func(r chi.Router) {
-				r.Use(h.RequireAuthMiddleware)
+				r.Use(h.SessionMiddleware)
 
 				r.Post("/orders", h.newOrderHandler)
 				r.Get("/orders", h.getOrdersHandler)

@@ -41,15 +41,16 @@ func (h *HandlerData) registerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sID := session.GetSessionIDFromRequest(r)
-
-	h.SessionAccount.Disable(r.Context(), sID)
-
-	err = h.SessionAccount.Create(r.Context(), usr.ID, sID)
+	sID, err := session.GetSessionFromCookie(r)
+	if err == nil {
+		h.Session.Disable(r.Context(), sID)
+	}
+	s, err := h.Session.Create(r.Context(), usr.ID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	session.PutSessionIDInCookie(w, s.ID)
 	writeAnswer(w, "regiteration complete", http.StatusOK)
 }
 
@@ -76,15 +77,16 @@ func (h *HandlerData) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sID := session.GetSessionIDFromRequest(r)
-
-	h.SessionAccount.Disable(r.Context(), sID)
-
-	err = h.SessionAccount.Create(r.Context(), usr.ID, sID)
+	sID, err := session.GetSessionFromCookie(r)
+	if err == nil {
+		h.Session.Disable(r.Context(), sID)
+	}
+	s, err := h.Session.Create(r.Context(), usr.ID)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	session.PutSessionIDInCookie(w, s.ID)
 
 	writeAnswer(w, "authentication complete", http.StatusAccepted)
 }
