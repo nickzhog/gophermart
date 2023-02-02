@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
     id TEXT PRIMARY KEY,
     user_id UUID NOT NULL,
     status TEXT NOT NULL DEFAULT 'NEW',
-    accrual TEXT,
+    accrual TEXT NOT NULL,
     upload_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT user_id FOREIGN KEY (user_id) REFERENCES public.users (id)
 );

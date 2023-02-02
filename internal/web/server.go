@@ -12,6 +12,7 @@ import (
 
 type HandlerData struct {
 	Logger *logging.Logger
+	Cfg    *config.Config
 	repositories.Repositories
 }
 
@@ -19,6 +20,7 @@ func StartServer(logger *logging.Logger, cfg *config.Config, reps repositories.R
 	h := HandlerData{
 		Logger:       logger,
 		Repositories: reps,
+		Cfg:          cfg,
 	}
 
 	r := chi.NewRouter()

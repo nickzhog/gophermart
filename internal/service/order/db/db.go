@@ -124,13 +124,57 @@ func (r *repository) Update(ctx context.Context, o *order.Order) error {
 
 }
 
+func (r *repository) FindForScanner(ctx context.Context) ([]order.Order, error) {
+	q := `
+		SELECT 
+			id, user_id, status, 
+			accrual, upload_at
+		FROM 
+			public.orders 
+		WHERE 
+			status = $1
+			or status = $2 
+			or status = $3
+	`
+
+	rows, err := r.client.Query(ctx, q,
+		order.StatusNew, order.StatusProccessing, order.StatusProcessed)
+	if err != nil {
+		return nil, err
+	}
+
+	orders := make([]order.Order, 0)
+
+	for rows.Next() {
+		var o order.Order
+
+		err = rows.Scan(&o.ID, &o.UserID, &o.Status,
+			&o.Accrual, &o.UploadAt)
+
+		if err != nil {
+			return nil, err
+		}
+		if o.AccrualFloat, err = strconv.ParseFloat(o.Accrual, 64); err != nil {
+			return nil, err
+		}
+
+		orders = append(orders, o)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return orders, nil
+}
+
 func NewRepository(client postgres.Client, logger *logging.Logger) order.Repository {
 	q := `
 	CREATE TABLE IF NOT EXISTS public.orders (
 		id TEXT PRIMARY KEY,
 		user_id UUID NOT NULL,
 		status TEXT NOT NULL DEFAULT 'NEW',
-		accrual TEXT,
+		accrual TEXT NOT NULL,
 		upload_at TIMESTAMP NOT NULL  DEFAULT CURRENT_TIMESTAMP,
 		constraint user_id FOREIGN KEY (user_id) REFERENCES public.users (id)
 	);
