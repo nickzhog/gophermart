@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 	"time"
+
+	"github.com/nickzhog/gophermart/internal/service/user"
 )
 
 type Session struct {
@@ -40,8 +42,6 @@ func PutSessionIDInCookie(w http.ResponseWriter, sID string) {
 		Value:    sID,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, &cookie)
 }
@@ -49,11 +49,12 @@ func PutSessionIDInCookie(w http.ResponseWriter, sID string) {
 func GetSessionIDFromRequest(r *http.Request) string {
 	s, exist := r.Context().Value(ContextKey).(string)
 	if !exist {
-		return ""
+		panic("cant find sessionID in context")
 	}
 	return s
 }
 
-func PutSessionIDInRequest(r *http.Request, sID string) *http.Request {
-	return r.WithContext(context.WithValue(r.Context(), ContextKey, sID))
+func PutSessionDataInRequest(r *http.Request, sID, usrID string) *http.Request {
+	newReq := r.WithContext(context.WithValue(r.Context(), ContextKey, sID))
+	return newReq.WithContext(context.WithValue(r.Context(), user.ContextKey, usrID))
 }

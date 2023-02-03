@@ -64,11 +64,12 @@ func IsAuthenticated(r *http.Request) bool {
 }
 
 func GetUserIDFromRequest(r *http.Request) string {
-	s, exist := r.Context().Value(ContextKey).(string)
+	usrID, exist := r.Context().Value(ContextKey).(string)
 	if !exist {
-		return ""
+		panic("cant find usrID in context")
 	}
-	return s
+
+	return usrID
 }
 
 func PutUserIDInRequest(r *http.Request, usrID string) *http.Request {

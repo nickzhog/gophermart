@@ -42,13 +42,17 @@ func (r *repository) Create(ctx context.Context, usr *user.User) error {
 func (r *repository) FindByLogin(ctx context.Context, login string) (user.User, error) {
 	q := `
 	SELECT
-	 id, password_hash
-	FROM public.users WHERE login = $1
+		id, login, password_hash
+	FROM 
+		public.users 
+	WHERE
+		login = $1
 	`
 
 	var usr user.User
 	err := r.client.QueryRow(ctx, q, login).
-		Scan(&usr.ID, &usr.PasswordHash)
+		Scan(&usr.ID, &usr.Login, &usr.PasswordHash)
+
 	if err != nil {
 		return user.User{}, err
 	}
@@ -59,13 +63,16 @@ func (r *repository) FindByLogin(ctx context.Context, login string) (user.User, 
 func (r *repository) FindByID(ctx context.Context, id string) (user.User, error) {
 	q := `
 	SELECT
-	 login, password_hash
-	FROM public.users WHERE id = $1
+	 id, login, password_hash
+	FROM 
+		public.users 
+	WHERE 
+		id = $1
 	`
 
 	var usr user.User
 	err := r.client.QueryRow(ctx, q, id).
-		Scan(&usr.Login, &usr.PasswordHash)
+		Scan(&usr.ID, &usr.Login, &usr.PasswordHash)
 	if err != nil {
 		return user.User{}, err
 	}

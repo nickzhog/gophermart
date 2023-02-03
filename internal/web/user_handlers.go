@@ -102,6 +102,7 @@ func (h *HandlerData) newOrderHandler(w http.ResponseWriter, r *http.Request) {
 	usrID := user.GetUserIDFromRequest(r)
 	order, err := order.NewOrder(string(body), usrID)
 	if err != nil {
+		h.Logger.Errorf("bad order: %s, %s", string(body), err.Error())
 		writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}

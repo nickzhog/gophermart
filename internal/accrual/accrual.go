@@ -31,7 +31,7 @@ func OrdersScanStart(logger *logging.Logger, cfg *config.Config, reps repositori
 				}
 				reps.Order.Update(ctx, &o)
 			}
-			time.Sleep(time.Second)
+			time.Sleep(time.Millisecond * 150)
 		}()
 	}
 }

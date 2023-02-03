@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -34,7 +35,7 @@ type Repository interface {
 
 func NewOrder(id, usrID string) (Order, error) {
 	if len(id) < 1 || len(usrID) < 1 {
-		return Order{}, errors.New("wrong data")
+		return Order{}, fmt.Errorf("empty data: id(%s), usrID(%s)", id, usrID)
 	}
 
 	idInt, err := strconv.Atoi(id)

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/nickzhog/gophermart/internal/service/user"
 	"github.com/nickzhog/gophermart/internal/web/session"
 )
 
@@ -32,8 +31,7 @@ func (h *HandlerData) SessionMiddleware(next http.Handler) http.Handler {
 			writeError(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		r = session.PutSessionIDInRequest(r, s.ID)
-		r = user.PutUserIDInRequest(r, usr.ID)
+		r = session.PutSessionDataInRequest(r, s.ID, usr.ID)
 		next.ServeHTTP(w, r)
 	}
 

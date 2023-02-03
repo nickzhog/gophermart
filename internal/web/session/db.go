@@ -45,7 +45,7 @@ func (r *repository) FindByID(ctx context.Context, id string) (Session, error) {
 	SELECT
 		id, user_id, create_at, is_active
 	FROM 
-		public.session 
+		public.sessions
 	WHERE 
 		id = $1 and is_active = true
 	`
