@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -29,7 +30,10 @@ func OrdersScanStart(logger *logging.Logger, cfg *config.Config, reps repositori
 					logger.Error(err)
 					continue
 				}
-				reps.Order.Update(ctx, &o)
+				err = reps.Order.Update(ctx, &o)
+				if err != nil {
+					logger.Error(err)
+				}
 			}
 			time.Sleep(time.Millisecond * 150)
 		}()
@@ -58,10 +62,16 @@ func getAccrual(ctx context.Context, url string, order *order.Order) error {
 		return getAccrual(ctx, url, order)
 	}
 
-	var ans Answer
-	err = json.NewDecoder(res.Body).Decode(&ans)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
+	}
+
+	var ans Answer
+	err = json.Unmarshal(body, &ans)
+	if err != nil {
+		return fmt.Errorf("body: %s, err: %s",
+			string(body), err.Error())
 	}
 
 	order.Accrual = fmt.Sprintf("%g", ans.Accrual)
