@@ -88,7 +88,7 @@ func (h *HandlerData) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	session.PutSessionIDInCookie(w, s.ID)
 
-	writeAnswer(w, "authentication complete", http.StatusAccepted)
+	writeAnswer(w, "authentication complete", http.StatusOK)
 }
 
 // загрузка пользователем номера заказа для расчёта

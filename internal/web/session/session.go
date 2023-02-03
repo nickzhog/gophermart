@@ -35,13 +35,15 @@ func GetSessionFromCookie(r *http.Request) (string, error) {
 }
 
 func PutSessionIDInCookie(w http.ResponseWriter, sID string) {
-	cookie := &http.Cookie{
+	cookie := http.Cookie{
 		Name:     CookieKey,
 		Value:    sID,
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
 	}
-	http.SetCookie(w, cookie)
+	http.SetCookie(w, &cookie)
 }
 
 func GetSessionIDFromRequest(r *http.Request) string {
