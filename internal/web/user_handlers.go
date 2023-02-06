@@ -164,11 +164,14 @@ func (h *HandlerData) balanceHandler(w http.ResponseWriter, r *http.Request) {
 	m["withdrawn"] = withdrawn
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(m)
+
+	data, err := json.Marshal(m)
 	if err != nil {
 		h.writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	h.writeAnswer(w, string(data), http.StatusOK)
 }
 
 // запрос на списание баллов с накопительного счёта в счёт оплаты нового заказа
@@ -230,9 +233,11 @@ func (h *HandlerData) withdrawalsHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(withdrawals)
+	data, err := json.Marshal(withdrawals)
 	if err != nil {
 		h.writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	h.writeAnswer(w, string(data), http.StatusOK)
 }
