@@ -112,7 +112,7 @@ func (r *repository) Update(ctx context.Context, o *order.Order) error {
 	q := `
 		UPDATE public.orders 
 		SET
-		 status = $1
+		 status = $1,
 		 accrual = $2
 		WHERE id = $3
 	`
