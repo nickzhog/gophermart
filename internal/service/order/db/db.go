@@ -77,6 +77,7 @@ func (r *repository) FindForUser(ctx context.Context, usrID string) ([]order.Ord
 
 	rows, err := r.client.Query(ctx, q, usrID)
 	if err != nil {
+		r.logger.Error(err)
 		return nil, err
 	}
 
@@ -89,9 +90,11 @@ func (r *repository) FindForUser(ctx context.Context, usrID string) ([]order.Ord
 			&o.Accrual, &o.UploadAt)
 
 		if err != nil {
+			r.logger.Error(err)
 			return nil, err
 		}
 		if o.AccrualFloat, err = strconv.ParseFloat(o.Accrual, 64); err != nil {
+			r.logger.Error(err)
 			return nil, err
 		}
 
@@ -99,6 +102,7 @@ func (r *repository) FindForUser(ctx context.Context, usrID string) ([]order.Ord
 	}
 
 	if err = rows.Err(); err != nil {
+		r.logger.Error(err)
 		return nil, err
 	}
 

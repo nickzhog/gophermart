@@ -40,9 +40,10 @@ func ParseWithdrawalRequest(data []byte) (WithdrawalRequest, error) {
 
 func NewWithdrawal(orderID, usrID string, sum float64) (Withdrawal, error) {
 	w := Withdrawal{
-		ID:     orderID,
-		UserID: usrID,
-		Sum:    fmt.Sprintf("%g", sum),
+		ID:       orderID,
+		UserID:   usrID,
+		Sum:      fmt.Sprintf("%g", sum),
+		SumFloat: sum,
 	}
 	idInt, err := strconv.Atoi(orderID)
 	if err != nil {

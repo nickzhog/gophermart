@@ -45,12 +45,15 @@ func (r *repository) FindForUser(ctx context.Context, usrID string) ([]withdrawa
 	q := `
 		SELECT 
 			id, user_id, sum, processed_at
-		FROM public.withdrawals 
-		WHERE user_id = $1;
+		FROM 
+			public.withdrawals 
+		WHERE 
+			user_id = $1;
 	`
 
 	rows, err := r.client.Query(ctx, q, usrID)
 	if err != nil {
+		r.logger.Error(err)
 		return nil, err
 	}
 
@@ -62,10 +65,12 @@ func (r *repository) FindForUser(ctx context.Context, usrID string) ([]withdrawa
 		err = rows.Scan(&w.ID, &w.UserID, &w.Sum, &w.ProcessedAt)
 
 		if err != nil {
+			r.logger.Error(err)
 			return nil, err
 		}
 
 		if w.SumFloat, err = strconv.ParseFloat(w.Sum, 64); err != nil {
+			r.logger.Error(err)
 			return nil, err
 		}
 
@@ -73,6 +78,7 @@ func (r *repository) FindForUser(ctx context.Context, usrID string) ([]withdrawa
 	}
 
 	if err = rows.Err(); err != nil {
+		r.logger.Error(err)
 		return nil, err
 	}
 
@@ -83,7 +89,10 @@ func (r *repository) FindByID(ctx context.Context, id string) (withdrawal.Withdr
 	q := `
 	SELECT
 	 id, user_id, sum, processed_at
-	FROM public.withdrawals WHERE id = $1
+	FROM 
+		public.withdrawals 
+	WHERE 
+		id = $1
 	`
 
 	var w withdrawal.Withdrawal

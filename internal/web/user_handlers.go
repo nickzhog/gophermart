@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -201,6 +202,13 @@ func (h *HandlerData) withdrawActionHandler(w http.ResponseWriter, r *http.Reque
 	wdl, err := withdrawal.NewWithdrawal(wReq.Order, usrID, wReq.Sum)
 	if err != nil {
 		h.writeError(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	_, err = h.Order.FindByID(r.Context(), wReq.Order)
+	if err != nil {
+		h.writeError(w,
+			fmt.Sprintf("withdrawal order: %s, err: %s", wReq.Order, err.Error()),
+			http.StatusUnprocessableEntity)
 		return
 	}
 	_, err = h.Withdrawal.FindByID(r.Context(), wdl.ID)
