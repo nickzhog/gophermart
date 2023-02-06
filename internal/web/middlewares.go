@@ -14,13 +14,13 @@ func (h *HandlerData) SessionMiddleware(next http.Handler) http.Handler {
 		sID, err := session.GetSessionFromCookie(r)
 		if err != nil {
 			h.Logger.Error(err)
-			writeError(w, "Unauthorized", http.StatusUnauthorized)
+			h.writeError(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		s, err := h.Session.FindByID(r.Context(), sID)
 		if err != nil {
 			h.Logger.Error(err)
-			writeError(w, "Unauthorized", http.StatusUnauthorized)
+			h.writeError(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
@@ -28,7 +28,7 @@ func (h *HandlerData) SessionMiddleware(next http.Handler) http.Handler {
 		if err != nil {
 			h.Logger.Error(err)
 			h.Session.Disable(r.Context(), sID)
-			writeError(w, "Unauthorized", http.StatusUnauthorized)
+			h.writeError(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		r = session.PutSessionDataInRequest(r, s.ID, usr.ID)
