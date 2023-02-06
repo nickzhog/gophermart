@@ -2,7 +2,6 @@ package web
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -161,6 +160,9 @@ func (h *HandlerData) balanceHandler(w http.ResponseWriter, r *http.Request) {
 
 	orders, _ := h.Order.FindForUser(r.Context(), usrID)
 
+	h.Logger.Tracef("len: orders: %v | withdrawals: %v", len(orders), len(withdrawals))
+	h.Logger.Tracef("orders: %+v | withdrawals: %+v", orders, withdrawals)
+
 	m := make(map[string]interface{})
 	m["current"] = order.AccrualSumForOrders(orders) - withdrawn
 	m["withdrawn"] = withdrawn
@@ -188,6 +190,7 @@ func (h *HandlerData) withdrawActionHandler(w http.ResponseWriter, r *http.Reque
 		h.writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
+	h.Logger.Tracef("withdrawal request: %+v", wReq)
 	usrID := user.GetUserIDFromRequest(r)
 
 	withdrawals, _ := h.Withdrawal.FindForUser(r.Context(), usrID)
@@ -205,13 +208,6 @@ func (h *HandlerData) withdrawActionHandler(w http.ResponseWriter, r *http.Reque
 		h.writeError(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
-	_, err = h.Order.FindByID(r.Context(), wReq.Order)
-	if err != nil {
-		h.writeError(w,
-			fmt.Sprintf("withdrawal order: %s, err: %s", wReq.Order, err.Error()),
-			http.StatusUnprocessableEntity)
-		return
-	}
 	_, err = h.Withdrawal.FindByID(r.Context(), wdl.ID)
 	if err == nil {
 		h.writeError(w, "order already used", http.StatusConflict)
@@ -223,6 +219,8 @@ func (h *HandlerData) withdrawActionHandler(w http.ResponseWriter, r *http.Reque
 		h.writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	h.Logger.Tracef("new withdrawal: %+v", wdl)
 
 	h.writeAnswer(w, "withdrawal succeeded", http.StatusOK)
 }
