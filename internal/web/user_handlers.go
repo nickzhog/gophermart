@@ -124,6 +124,7 @@ func (h *HandlerData) newOrderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.Logger.Tracef("new order: %+v", order)
 	h.writeAnswer(w, "success", http.StatusAccepted)
 }
 
@@ -231,7 +232,6 @@ func (h *HandlerData) withdrawalsHandler(w http.ResponseWriter, r *http.Request)
 	usrID := user.GetUserIDFromRequest(r)
 	withdrawals, err := h.Withdrawal.FindForUser(r.Context(), usrID)
 	if err != nil {
-
 		h.writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
