@@ -47,8 +47,8 @@ type Answer struct {
 }
 
 func getAccrual(ctx context.Context, url string, order *order.Order) error {
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		fmt.Sprintf("%s/%s", url, order.ID), nil)
+	fullURL := fmt.Sprintf("%s/api/orders/%s", url, order.ID)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
 	if err != nil {
 		return err
 	}
@@ -70,8 +70,8 @@ func getAccrual(ctx context.Context, url string, order *order.Order) error {
 	var ans Answer
 	err = json.Unmarshal(body, &ans)
 	if err != nil {
-		return fmt.Errorf("body: %s, err: %s",
-			string(body), err.Error())
+		return fmt.Errorf("url:%s,body:%s, err:%s",
+			fullURL, string(body), err.Error())
 	}
 
 	order.Accrual = fmt.Sprintf("%g", ans.Accrual)
