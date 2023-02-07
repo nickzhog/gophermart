@@ -19,20 +19,6 @@ type UserID string
 
 const ContextKey UserID = "user"
 
-type AuthRequest struct {
-	Login    string `json:"login,omitempty"`
-	Password string `json:"password,omitempty"`
-}
-
-func ParseAuthRequest(data []byte) (AuthRequest, error) {
-	var authData AuthRequest
-	err := json.Unmarshal(data, &authData)
-	if err != nil {
-		return AuthRequest{}, err
-	}
-	return authData, nil
-}
-
 func NewUser(login, password string) (User, error) {
 	if len(login) < 1 || len(password) < 1 {
 		return User{}, errors.New("login or password is empty")
@@ -67,4 +53,18 @@ func GetUserIDFromRequest(r *http.Request) string {
 
 func PutUserIDInRequest(r *http.Request, usrID string) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), ContextKey, usrID))
+}
+
+type AuthRequest struct {
+	Login    string `json:"login,omitempty"`
+	Password string `json:"password,omitempty"`
+}
+
+func ParseAuthRequest(data []byte) (AuthRequest, error) {
+	var authData AuthRequest
+	err := json.Unmarshal(data, &authData)
+	if err != nil {
+		return AuthRequest{}, err
+	}
+	return authData, nil
 }

@@ -142,7 +142,7 @@ func (r *repository) FindForScanner(ctx context.Context) ([]order.Order, error) 
 	`
 
 	rows, err := r.client.Query(ctx, q,
-		order.StatusNew, order.StatusProccessing, order.StatusProcessed)
+		order.StatusNew, order.StatusProcessing, order.StatusProcessed)
 	if err != nil {
 		return nil, err
 	}

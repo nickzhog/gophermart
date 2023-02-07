@@ -8,11 +8,11 @@ import (
 )
 
 const (
-	StatusNew         = "NEW"        // заказ создан
-	StatusInvalid     = "INVALID"    // заказ не принят к расчёту, и вознаграждение не будет начислено
-	StatusRegistered  = "REGISTERED" // заказ зарегистрирован, но не начисление не рассчитано
-	StatusProccessing = "PROCESSING" // расчёт начисления в процессе
-	StatusProcessed   = "PROCESSED"  // расчёт начисления окончен
+	StatusNew        = "NEW"        // заказ создан
+	StatusInvalid    = "INVALID"    // заказ не принят к расчёту, и вознаграждение не будет начислено
+	StatusRegistered = "REGISTERED" // заказ зарегистрирован, но не начисление не рассчитано
+	StatusProcessing = "PROCESSING" // расчёт начисления в процессе
+	StatusProcessed  = "PROCESSED"  // расчёт начисления окончен
 )
 
 type Order struct {
@@ -45,7 +45,7 @@ func NewOrder(id, usrID string) (Order, error) {
 	return o, nil
 }
 
-func AccrualSumForOrders(ords []Order) float64 {
+func AccrualSumForProcessedOrders(ords []Order) float64 {
 	ans := 0.0
 	for _, o := range ords {
 		if o.Status != StatusProcessed {

@@ -130,6 +130,7 @@ func (h *HandlerData) newOrderHandler(w http.ResponseWriter, r *http.Request) {
 // получение списка загруженных пользователем номеров заказов, статусов их обработки и информации о начислениях
 func (h *HandlerData) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 	usrID := user.GetUserIDFromRequest(r)
+
 	orders, err := h.Order.FindForUser(r.Context(), usrID)
 	if err != nil {
 		h.writeError(w, err.Error(), http.StatusInternalServerError)
@@ -153,17 +154,15 @@ func (h *HandlerData) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 // получение текущего баланса счёта баллов лояльности пользователя
 func (h *HandlerData) balanceHandler(w http.ResponseWriter, r *http.Request) {
 	usrID := user.GetUserIDFromRequest(r)
-	withdrawals, err := h.Withdrawal.FindForUser(r.Context(), usrID)
-	if err != nil {
-		h.writeError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	withdrawn := withdrawal.SumForWithdrawals(withdrawals)
 
+	withdrawals, _ := h.Withdrawal.FindForUser(r.Context(), usrID)
 	orders, _ := h.Order.FindForUser(r.Context(), usrID)
 
+	withdrawn := withdrawal.SumForWithdrawals(withdrawals)
+	balance := order.AccrualSumForProcessedOrders(orders) - withdrawn
+
 	m := make(map[string]interface{})
-	m["current"] = order.AccrualSumForOrders(orders) - withdrawn
+	m["current"] = balance
 	m["withdrawn"] = withdrawn
 
 	w.Header().Set("Content-Type", "application/json")
@@ -190,13 +189,15 @@ func (h *HandlerData) withdrawActionHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	h.Logger.Tracef("withdrawal request: %+v", wReq)
+
 	usrID := user.GetUserIDFromRequest(r)
 
 	withdrawals, _ := h.Withdrawal.FindForUser(r.Context(), usrID)
 	orders, _ := h.Order.FindForUser(r.Context(), usrID)
 
 	withdrawn := withdrawal.SumForWithdrawals(withdrawals)
-	balance := order.AccrualSumForOrders(orders) - withdrawn
+	balance := order.AccrualSumForProcessedOrders(orders) - withdrawn
+
 	if balance < wReq.Sum {
 		h.writeError(w, "not enough balance", http.StatusPaymentRequired)
 		return
