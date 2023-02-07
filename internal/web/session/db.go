@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgconn"
-	"github.com/nickzhog/gophermart/internal/postgres"
 	"github.com/nickzhog/gophermart/pkg/logging"
+	"github.com/nickzhog/gophermart/pkg/postgres"
 )
 
 type repository struct {

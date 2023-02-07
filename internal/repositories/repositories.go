@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/nickzhog/gophermart/internal/config"
-	"github.com/nickzhog/gophermart/internal/postgres"
 	"github.com/nickzhog/gophermart/internal/service/order"
 	orderdb "github.com/nickzhog/gophermart/internal/service/order/db"
 	"github.com/nickzhog/gophermart/internal/service/user"
@@ -14,6 +13,7 @@ import (
 	withdrawaldb "github.com/nickzhog/gophermart/internal/service/withdrawal/db"
 	"github.com/nickzhog/gophermart/internal/web/session"
 	"github.com/nickzhog/gophermart/pkg/logging"
+	"github.com/nickzhog/gophermart/pkg/postgres"
 )
 
 const (

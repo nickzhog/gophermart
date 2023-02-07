@@ -141,11 +141,13 @@ func (h *HandlerData) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(orders)
+	data, err := json.Marshal(orders)
 	if err != nil {
 		h.writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	h.writeAnswer(w, string(data), http.StatusOK)
 }
 
 // получение текущего баланса счёта баллов лояльности пользователя
@@ -159,9 +161,6 @@ func (h *HandlerData) balanceHandler(w http.ResponseWriter, r *http.Request) {
 	withdrawn := withdrawal.SumForWithdrawals(withdrawals)
 
 	orders, _ := h.Order.FindForUser(r.Context(), usrID)
-
-	h.Logger.Tracef("len: orders: %v | withdrawals: %v", len(orders), len(withdrawals))
-	h.Logger.Tracef("orders: %+v | withdrawals: %+v", orders, withdrawals)
 
 	m := make(map[string]interface{})
 	m["current"] = order.AccrualSumForOrders(orders) - withdrawn
