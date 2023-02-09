@@ -1,7 +1,6 @@
 package user
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -29,30 +28,15 @@ func NewUser(login, password string) (User, error) {
 		return User{}, err
 	}
 
-	var usr User
-	usr.Login = login
-	usr.PasswordHash = string(phash)
-
-	return usr, nil
-}
-
-func IsAuthenticated(r *http.Request) bool {
-	_, exist := r.Context().Value(ContextKey).(string)
-
-	return exist
+	return User{Login: login, PasswordHash: string(phash)}, nil
 }
 
 func GetUserIDFromRequest(r *http.Request) string {
-	usrID, exist := r.Context().Value(ContextKey).(string)
-	if !exist {
-		panic("cant find usrID in context")
+	usrID := r.Context().Value(ContextKey).(string)
+	if len(usrID) < 1 {
+		panic("usrID is empty")
 	}
-
 	return usrID
-}
-
-func PutUserIDInRequest(r *http.Request, usrID string) *http.Request {
-	return r.WithContext(context.WithValue(r.Context(), ContextKey, usrID))
 }
 
 type AuthRequest struct {

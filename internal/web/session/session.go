@@ -47,11 +47,11 @@ func PutSessionIDInCookie(w http.ResponseWriter, sID string) {
 }
 
 func GetSessionIDFromRequest(r *http.Request) string {
-	s, exist := r.Context().Value(ContextKey).(string)
-	if !exist {
-		panic("cant find sessionID in context")
+	sID := r.Context().Value(ContextKey).(string)
+	if len(sID) < 1 {
+		panic("sessionID is empty")
 	}
-	return s
+	return sID
 }
 
 func PutSessionDataInRequest(r *http.Request, sID, usrID string) *http.Request {
