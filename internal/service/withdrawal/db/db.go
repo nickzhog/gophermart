@@ -57,7 +57,7 @@ func (r *repository) FindForUser(ctx context.Context, usrID string) ([]withdrawa
 		return nil, err
 	}
 
-	wdls := make([]withdrawal.Withdrawal, 0)
+	wdls := make([]withdrawal.Withdrawal, rows.CommandTag().RowsAffected())
 
 	for rows.Next() {
 		var w withdrawal.Withdrawal

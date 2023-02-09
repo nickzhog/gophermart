@@ -81,7 +81,7 @@ func (r *repository) FindForUser(ctx context.Context, usrID string) ([]order.Ord
 		return nil, err
 	}
 
-	orders := make([]order.Order, 0)
+	orders := make([]order.Order, rows.CommandTag().RowsAffected())
 
 	for rows.Next() {
 		var o order.Order
@@ -147,7 +147,7 @@ func (r *repository) FindForScanner(ctx context.Context) ([]order.Order, error) 
 		return nil, err
 	}
 
-	orders := make([]order.Order, 0)
+	orders := make([]order.Order, rows.CommandTag().RowsAffected())
 
 	for rows.Next() {
 		var o order.Order
