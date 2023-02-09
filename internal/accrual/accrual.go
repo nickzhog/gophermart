@@ -14,30 +14,33 @@ import (
 	"github.com/nickzhog/gophermart/pkg/logging"
 )
 
-func OrdersScanStart(logger *logging.Logger, cfg *config.Config, reps repositories.Repositories) {
-	for {
-		func() {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-			defer cancel()
-			orders, err := reps.Order.FindForScanner(ctx)
-			if err != nil {
-				logger.Error(err)
-				return
-			}
-			for _, o := range orders {
-				err = getAccrual(ctx, cfg.Settings.AccrualSystemAddress, &o)
+func StartOrdersScan(logger *logging.Logger, cfg *config.Config, reps repositories.Repositories) {
+	go func() {
+		for {
+			func() {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+				defer cancel()
+				orders, err := reps.Order.FindForScanner(ctx)
 				if err != nil {
 					logger.Error(err)
-					continue
+					return
 				}
-				err = reps.Order.Update(ctx, &o)
-				if err != nil {
-					logger.Error(err)
+				for _, o := range orders {
+					err = updateAccrual(ctx, cfg.Settings.AccrualSystemAddress, &o)
+					if err != nil {
+						logger.Error(err)
+						continue
+					}
+					err = reps.Order.Update(ctx, &o)
+					if err != nil {
+						logger.Error(err)
+					}
 				}
-			}
-			time.Sleep(time.Millisecond * 150)
-		}()
-	}
+			}()
+
+			time.Sleep(cfg.Settings.AccrualScanInterval)
+		}
+	}()
 }
 
 type Answer struct {
@@ -46,7 +49,7 @@ type Answer struct {
 	Accrual float64 `json:"accrual,omitempty"`
 }
 
-func getAccrual(ctx context.Context, url string, order *order.Order) error {
+func updateAccrual(ctx context.Context, url string, order *order.Order) error {
 	fullURL := fmt.Sprintf("%s/api/orders/%s", url, order.ID)
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
 	if err != nil {
@@ -59,7 +62,8 @@ func getAccrual(ctx context.Context, url string, order *order.Order) error {
 	defer res.Body.Close()
 
 	if res.StatusCode == http.StatusTooManyRequests {
-		return getAccrual(ctx, url, order)
+		time.Sleep(time.Second)
+		return updateAccrual(ctx, url, order)
 	}
 
 	body, err := io.ReadAll(res.Body)

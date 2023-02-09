@@ -15,6 +15,6 @@ func main() {
 
 	reps := repositories.GetRepositories(logger, cfg)
 
-	go accrual.OrdersScanStart(logger, cfg, reps)
+	accrual.StartOrdersScan(logger, cfg, reps)
 	web.StartServer(logger, cfg, reps)
 }
