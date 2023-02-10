@@ -1,4 +1,4 @@
-package session
+package db
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgconn"
+	"github.com/nickzhog/gophermart/internal/web/session"
 	"github.com/nickzhog/gophermart/pkg/logging"
 	"github.com/nickzhog/gophermart/pkg/postgres"
 )
@@ -15,7 +16,7 @@ type repository struct {
 	logger *logging.Logger
 }
 
-func (r *repository) Create(ctx context.Context, usrID string) (Session, error) {
+func (r *repository) Create(ctx context.Context, usrID string) (session.Session, error) {
 	q := `
 	INSERT INTO public.sessions 
 		(user_id) 
@@ -23,7 +24,7 @@ func (r *repository) Create(ctx context.Context, usrID string) (Session, error) 
 		($1) 
 	RETURNING id, user_id, create_at, is_active
 	`
-	var s Session
+	var s session.Session
 	err := r.client.QueryRow(ctx, q, usrID).
 		Scan(&s.ID, &s.UserID, &s.CreateAt, &s.IsActive)
 	if err != nil {
@@ -35,12 +36,12 @@ func (r *repository) Create(ctx context.Context, usrID string) (Session, error) 
 			r.logger.Error("err:", newErr.Error())
 		}
 		r.logger.Error("err:", err.Error())
-		return Session{}, err
+		return session.Session{}, err
 	}
 	return s, nil
 }
 
-func (r *repository) FindByID(ctx context.Context, id string) (Session, error) {
+func (r *repository) FindByID(ctx context.Context, id string) (session.Session, error) {
 	q := `
 	SELECT
 		id, user_id, create_at, is_active
@@ -49,12 +50,12 @@ func (r *repository) FindByID(ctx context.Context, id string) (Session, error) {
 	WHERE 
 		id = $1 and is_active = true
 	`
-	var s Session
+	var s session.Session
 	err := r.client.QueryRow(ctx, q, id).
 		Scan(&s.ID, &s.UserID, &s.CreateAt, &s.IsActive)
 
 	if err != nil {
-		return Session{}, err
+		return session.Session{}, err
 	}
 
 	return s, nil
@@ -73,7 +74,7 @@ func (r *repository) Disable(ctx context.Context, id string) error {
 	return err
 }
 
-func NewRepository(client postgres.Client, logger *logging.Logger) Repository {
+func NewRepository(client postgres.Client, logger *logging.Logger) session.Repository {
 	q := `
 	CREATE TABLE IF NOT EXISTS public.sessions (
 		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -15,12 +15,6 @@ type Session struct {
 	IsActive bool
 }
 
-type Repository interface {
-	Create(ctx context.Context, usrID string) (Session, error)
-	FindByID(ctx context.Context, id string) (Session, error)
-	Disable(ctx context.Context, id string) error
-}
-
 type SessionID string
 
 const (

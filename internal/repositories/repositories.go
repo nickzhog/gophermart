@@ -12,6 +12,7 @@ import (
 	"github.com/nickzhog/gophermart/internal/service/withdrawal"
 	withdrawaldb "github.com/nickzhog/gophermart/internal/service/withdrawal/db"
 	"github.com/nickzhog/gophermart/internal/web/session"
+	sessiondb "github.com/nickzhog/gophermart/internal/web/session/db"
 	"github.com/nickzhog/gophermart/pkg/logging"
 	"github.com/nickzhog/gophermart/pkg/postgres"
 )
@@ -43,6 +44,6 @@ func GetRepositories(ctx context.Context, logger *logging.Logger, cfg *config.Co
 		User:       userdb.NewRepository(pool, logger),
 		Order:      orderdb.NewRepository(pool, logger),
 		Withdrawal: withdrawaldb.NewRepository(pool, logger),
-		Session:    session.NewRepository(pool, logger),
+		Session:    sessiondb.NewRepository(pool, logger),
 	}
 }
