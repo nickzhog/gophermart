@@ -97,7 +97,7 @@ func (r *repository) FindByID(ctx context.Context, id string) (withdrawal.Withdr
 
 	var w withdrawal.Withdrawal
 	err := r.client.QueryRow(ctx, q, id).
-		Scan(&w.ID, &w.UserID, &w.Sum)
+		Scan(&w.ID, &w.UserID, &w.Sum, &w.ProcessedAt)
 	if err != nil {
 		return withdrawal.Withdrawal{}, err
 	}

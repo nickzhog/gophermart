@@ -28,8 +28,8 @@ type Repositories struct {
 	Session    session.Repository
 }
 
-func GetRepositories(logger *logging.Logger, cfg *config.Config) Repositories {
-	ctx, cancel := context.WithTimeout(context.Background(), dbConnectTimeOut)
+func GetRepositories(ctx context.Context, logger *logging.Logger, cfg *config.Config) Repositories {
+	ctx, cancel := context.WithTimeout(ctx, dbConnectTimeOut)
 	defer cancel()
 
 	pool, err := postgres.NewConnection(ctx, maxAttempts, cfg.Settings.DatabaseURI)

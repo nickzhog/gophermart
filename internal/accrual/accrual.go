@@ -3,44 +3,67 @@ package accrual
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
 
 	"github.com/nickzhog/gophermart/internal/config"
-	"github.com/nickzhog/gophermart/internal/repositories"
 	"github.com/nickzhog/gophermart/internal/service/order"
 	"github.com/nickzhog/gophermart/pkg/logging"
 )
 
-func StartOrdersScan(logger *logging.Logger, cfg *config.Config, reps repositories.Repositories) {
-	go func() {
-		for {
-			func() {
-				ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-				defer cancel()
-				orders, err := reps.Order.FindForScanner(ctx)
-				if err != nil {
-					logger.Error(err)
-					return
-				}
-				for _, o := range orders {
-					err = updateAccrual(ctx, cfg.Settings.AccrualSystemAddress, &o)
-					if err != nil {
-						logger.Error(err)
-						continue
-					}
-					err = reps.Order.Update(ctx, &o)
-					if err != nil {
-						logger.Error(err)
-					}
-				}
-			}()
+type Scanner interface {
+	StartScan(ctx context.Context) error
+}
 
-			time.Sleep(cfg.Settings.AccrualScanInterval)
+type scanner struct {
+	Logger   *logging.Logger
+	Cfg      *config.Config
+	OrderRep order.Repository
+}
+
+func NewScanner(logger *logging.Logger, cfg *config.Config, orderRep order.Repository) Scanner {
+	return &scanner{
+		Logger:   logger,
+		Cfg:      cfg,
+		OrderRep: orderRep,
+	}
+}
+
+func (s *scanner) StartScan(ctx context.Context) error {
+	ticker := time.NewTicker(s.Cfg.Settings.AccrualScanInterval)
+	for {
+		select {
+		case <-ticker.C:
+			s.scan(ctx)
+		case <-ctx.Done():
+			s.Logger.Trace("orders scan stopped")
+			return errors.New("context deadline exceeded")
 		}
-	}()
+	}
+}
+
+func (s *scanner) scan(ctx context.Context) {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*4)
+	defer cancel()
+	orders, err := s.OrderRep.FindForScanner(ctx)
+	if err != nil {
+		s.Logger.Error(err)
+		return
+	}
+	for _, o := range orders {
+		err = updateAccrual(ctx, s.Cfg.Settings.AccrualSystemAddress, &o)
+		if err != nil {
+			s.Logger.Error(err)
+			continue
+		}
+		err = s.OrderRep.Update(ctx, &o)
+		if err != nil {
+			s.Logger.Error(err)
+		}
+	}
 }
 
 type Answer struct {
@@ -62,8 +85,7 @@ func updateAccrual(ctx context.Context, url string, order *order.Order) error {
 	defer res.Body.Close()
 
 	if res.StatusCode == http.StatusTooManyRequests {
-		time.Sleep(time.Second)
-		return updateAccrual(ctx, url, order)
+		return errors.New("too many requests")
 	}
 
 	body, err := io.ReadAll(res.Body)
@@ -76,6 +98,14 @@ func updateAccrual(ctx context.Context, url string, order *order.Order) error {
 	if err != nil {
 		return fmt.Errorf("url:%s,body:%s, err:%s",
 			fullURL, string(body), err.Error())
+	}
+
+	if order.AccrualFloat == ans.Accrual &&
+		order.Status == ans.Status {
+		return errors.New("nothing changed")
+	}
+	if order.ID != ans.Order {
+		return errors.New("order ID changed")
 	}
 
 	order.Accrual = fmt.Sprintf("%g", ans.Accrual)
