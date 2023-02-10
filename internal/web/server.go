@@ -19,7 +19,7 @@ type HandlerData struct {
 	repositories.Repositories
 }
 
-func PrepareServer(logger *logging.Logger, cfg *config.Config, reps repositories.Repositories) http.Server {
+func PrepareServer(logger *logging.Logger, cfg *config.Config, reps repositories.Repositories) *http.Server {
 	h := HandlerData{
 		Logger:       logger,
 		Cfg:          cfg,
@@ -54,13 +54,13 @@ func PrepareServer(logger *logging.Logger, cfg *config.Config, reps repositories
 		})
 	})
 
-	return http.Server{
+	return &http.Server{
 		Addr:    cfg.Settings.RunAddress,
 		Handler: r,
 	}
 }
 
-func Serve(ctx context.Context, logger *logging.Logger, srv http.Server) (err error) {
+func Serve(ctx context.Context, logger *logging.Logger, srv *http.Server) (err error) {
 	go func() {
 		if err = srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen:%+s\n", err)
