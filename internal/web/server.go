@@ -33,7 +33,8 @@ func PrepareServer(logger *logging.Logger, cfg *config.Config, reps repositories
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
 
-	r.Use(gzipMiddleWare)
+	r.Use(h.gzipCompress)
+	r.Use(h.gzipDecompress)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/user", func(r chi.Router) {

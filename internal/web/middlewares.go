@@ -10,7 +10,7 @@ import (
 )
 
 func (h *HandlerData) SessionMiddleware(next http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sID, err := session.GetSessionFromCookie(r)
 		if err != nil {
 			h.Logger.Error(err)
@@ -33,12 +33,10 @@ func (h *HandlerData) SessionMiddleware(next http.Handler) http.Handler {
 		}
 		r = session.PutSessionDataInRequest(r, s.ID, usr.ID)
 		next.ServeHTTP(w, r)
-	}
-
-	return http.HandlerFunc(fn)
+	})
 }
 
-///
+// Gzip compress
 
 type gzipWriter struct {
 	http.ResponseWriter
@@ -49,7 +47,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func gzipMiddleWare(next http.Handler) http.Handler {
+func (h *HandlerData) gzipCompress(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			next.ServeHTTP(w, r)
@@ -58,7 +56,7 @@ func gzipMiddleWare(next http.Handler) http.Handler {
 
 		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 		if err != nil {
-			io.WriteString(w, err.Error())
+			h.writeError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		defer gz.Close()
@@ -66,5 +64,20 @@ func gzipMiddleWare(next http.Handler) http.Handler {
 		w.Header().Set("Content-Encoding", "gzip")
 		// передаём обработчику страницы переменную типа gzipWriter для вывода данных
 		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
+	})
+}
+
+func (h *HandlerData) gzipDecompress(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Content-Encoding") == "gzip" {
+			gzReader, err := gzip.NewReader(r.Body)
+			if err != nil {
+				h.writeError(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			defer gzReader.Close()
+			r.Body = gzReader
+		}
+		next.ServeHTTP(w, r)
 	})
 }
