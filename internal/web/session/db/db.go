@@ -75,19 +75,6 @@ func (r *repository) Disable(ctx context.Context, id string) error {
 }
 
 func NewRepository(client postgres.Client, logger *logging.Logger) session.Repository {
-	q := `
-	CREATE TABLE IF NOT EXISTS public.sessions (
-		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-		user_id UUID NOT NULL,
-		create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		is_active bool NOT NULL DEFAULT true,
-		CONSTRAINT user_id FOREIGN KEY (user_id) REFERENCES public.users (id)
-	);
-	`
-	_, err := client.Exec(context.TODO(), q)
-	if err != nil {
-		logger.Fatal(err)
-	}
 
 	return &repository{
 		client: client,

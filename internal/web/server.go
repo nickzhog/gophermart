@@ -10,21 +10,16 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/nickzhog/gophermart/internal/config"
 	"github.com/nickzhog/gophermart/internal/repositories"
+	orderHandler "github.com/nickzhog/gophermart/internal/service/order/handler"
+	userHandler "github.com/nickzhog/gophermart/internal/service/user/handler"
+	withdrawalHandler "github.com/nickzhog/gophermart/internal/service/withdrawal/handler"
 	"github.com/nickzhog/gophermart/pkg/logging"
 )
 
-type HandlerData struct {
-	Logger *logging.Logger
-	Cfg    *config.Config
-	repositories.Repositories
-}
-
 func PrepareServer(logger *logging.Logger, cfg *config.Config, reps repositories.Repositories) *http.Server {
-	h := HandlerData{
-		Logger:       logger,
-		Cfg:          cfg,
-		Repositories: reps,
-	}
+	orderHandler := orderHandler.NewHandler(logger, reps)
+	userHandler := userHandler.NewHandler(logger, reps)
+	withdrawalHander := withdrawalHandler.NewHandler(logger, reps)
 
 	r := chi.NewRouter()
 
@@ -33,24 +28,18 @@ func PrepareServer(logger *logging.Logger, cfg *config.Config, reps repositories
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
 
-	r.Use(h.gzipCompress)
-	r.Use(h.gzipDecompress)
+	r.Use(gzipCompress)
+	r.Use(gzipDecompress)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/user", func(r chi.Router) {
-			r.Group(func(r chi.Router) {
-				r.Post("/register", h.registerHandler)
-				r.Post("/login", h.loginHandler)
-			})
-			r.Group(func(r chi.Router) {
-				r.Use(h.SessionMiddleware)
+			r.Group(userHandler.GetRouteGroup())
 
-				r.Post("/orders", h.newOrderHandler)
-				r.Get("/orders", h.getOrdersHandler)
+			r.Group(func(r chi.Router) {
+				r.Use(SessionMiddleware(logger, reps))
 
-				r.Get("/balance", h.balanceHandler)
-				r.Post("/balance/withdraw", h.withdrawActionHandler)
-				r.Get("/withdrawals", h.withdrawalsHandler)
+				r.Group(orderHandler.GetRouteGroup())
+				r.Group(withdrawalHander.GetRouteGroup())
 			})
 		})
 	})

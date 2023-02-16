@@ -1,4 +1,4 @@
-package web
+package handler
 
 import (
 	"bytes"
@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/nickzhog/gophermart/internal/config"
 	"github.com/nickzhog/gophermart/internal/service/user"
 	mock_user "github.com/nickzhog/gophermart/internal/service/user/mocks"
 	"github.com/nickzhog/gophermart/internal/web/session"
@@ -28,11 +27,9 @@ const (
 	validSessionID = "ValidSessionID"
 )
 
-func prepareHandlerData(ctrl *gomock.Controller) *HandlerData {
-	cfg := config.Config{}
-	h := &HandlerData{
-		Logger: logging.GetLogger(),
-		Cfg:    &cfg,
+func prepareHandlerData(ctrl *gomock.Controller) *handler {
+	h := &handler{
+		logger: logging.GetLogger(),
 	}
 
 	usrRep := mock_user.NewMockRepository(ctrl)

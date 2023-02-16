@@ -173,20 +173,6 @@ func (r *repository) FindForScanner(ctx context.Context) ([]order.Order, error) 
 }
 
 func NewRepository(client postgres.Client, logger *logging.Logger) order.Repository {
-	q := `
-	CREATE TABLE IF NOT EXISTS public.orders (
-		id TEXT PRIMARY KEY,
-		user_id UUID NOT NULL,
-		status TEXT NOT NULL DEFAULT 'NEW',
-		accrual TEXT NOT NULL,
-		upload_at TIMESTAMP NOT NULL  DEFAULT CURRENT_TIMESTAMP,
-		constraint user_id FOREIGN KEY (user_id) REFERENCES public.users (id)
-	);
-	`
-	_, err := client.Exec(context.TODO(), q)
-	if err != nil {
-		logger.Fatal(err)
-	}
 
 	return &repository{
 		client: client,

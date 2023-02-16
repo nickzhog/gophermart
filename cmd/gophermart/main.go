@@ -4,9 +4,11 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"sync"
 
-	"github.com/nickzhog/gophermart/internal/accrual"
 	"github.com/nickzhog/gophermart/internal/config"
+	"github.com/nickzhog/gophermart/internal/migration"
+	"github.com/nickzhog/gophermart/internal/orderprocesser"
 	"github.com/nickzhog/gophermart/internal/repositories"
 	"github.com/nickzhog/gophermart/internal/web"
 	"github.com/nickzhog/gophermart/pkg/logging"
@@ -28,17 +30,25 @@ func main() {
 		cancel()
 	}()
 
+	migration.Migrate(logger, cfg.Settings.DatabaseURI)
 	reps := repositories.GetRepositories(ctx, logger, cfg)
 
-	srv := web.PrepareServer(logger, cfg, reps)
+	wg := new(sync.WaitGroup)
+	wg.Add(2)
 	go func() {
+		err := orderprocesser.NewProcesser(logger, cfg, reps.Order).StartScan(ctx)
+		if err != nil {
+			logger.Errorf("order processer error: %s", err.Error())
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		srv := web.PrepareServer(logger, cfg, reps)
 		if err := web.Serve(ctx, logger, srv); err != nil {
 			logger.Errorf("failed to serve: %s", err.Error())
 		}
+		wg.Done()
 	}()
-
-	err := accrual.NewScanner(logger, cfg, reps.Order).StartScan(ctx)
-	if err != nil {
-		logger.Errorf("scanner error: %s", err.Error())
-	}
+	wg.Wait()
 }

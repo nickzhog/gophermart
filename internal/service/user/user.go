@@ -1,10 +1,14 @@
 package user
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 
+	"github.com/jackc/pgx/v4"
+	"github.com/nickzhog/gophermart/internal/service/order"
+	"github.com/nickzhog/gophermart/internal/service/withdrawal"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -29,6 +33,36 @@ func NewUser(login, password string) (User, error) {
 	}
 
 	return User{Login: login, PasswordHash: string(phash)}, nil
+}
+
+func (u *User) CalculateWithdrawn(
+	ctx context.Context,
+	withdrawalRep withdrawal.Repository,
+) (float64, error) {
+	withdrawals, err := withdrawalRep.FindForUser(ctx, u.ID)
+	if err != nil && err != pgx.ErrNoRows {
+		return 0, err
+	}
+	withdrawn := withdrawal.SumForWithdrawals(withdrawals)
+	return withdrawn, nil
+}
+
+func (u *User) CalculateBalance(
+	ctx context.Context,
+	orderRep order.Repository,
+	withdrawalRep withdrawal.Repository) (float64, error) {
+
+	orders, err := orderRep.FindForUser(ctx, u.ID)
+	if err != nil && err != pgx.ErrNoRows {
+		return 0, err
+	}
+	withdrawn, err := u.CalculateWithdrawn(ctx, withdrawalRep)
+	if err != nil {
+		return 0, err
+	}
+
+	balance := order.AccrualSumForProcessedOrders(orders) - withdrawn
+	return balance, nil
 }
 
 func GetUserIDFromRequest(r *http.Request) string {

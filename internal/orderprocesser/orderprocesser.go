@@ -1,4 +1,4 @@
-package accrual
+package orderprocesser
 
 import (
 	"context"
@@ -14,54 +14,54 @@ import (
 	"github.com/nickzhog/gophermart/pkg/logging"
 )
 
-type Scanner interface {
+type OrderProcesser interface {
 	StartScan(ctx context.Context) error
 }
 
-type scanner struct {
+type orderProcesser struct {
 	Logger   *logging.Logger
 	Cfg      *config.Config
 	OrderRep order.Repository
 }
 
-func NewScanner(logger *logging.Logger, cfg *config.Config, orderRep order.Repository) Scanner {
-	return &scanner{
+func NewProcesser(logger *logging.Logger, cfg *config.Config, orderRep order.Repository) OrderProcesser {
+	return &orderProcesser{
 		Logger:   logger,
 		Cfg:      cfg,
 		OrderRep: orderRep,
 	}
 }
 
-func (s *scanner) StartScan(ctx context.Context) error {
-	ticker := time.NewTicker(s.Cfg.Settings.AccrualScanInterval)
+func (p *orderProcesser) StartScan(ctx context.Context) error {
+	ticker := time.NewTicker(p.Cfg.Settings.AccrualScanInterval)
 	for {
 		select {
 		case <-ticker.C:
-			s.scan(ctx)
+			p.scan(ctx)
 		case <-ctx.Done():
-			s.Logger.Trace("orders scan stopped")
-			return errors.New("context deadline exceeded")
+			p.Logger.Trace("orders processing exited properly")
+			return nil
 		}
 	}
 }
 
-func (s *scanner) scan(ctx context.Context) {
+func (p *orderProcesser) scan(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*4)
 	defer cancel()
-	orders, err := s.OrderRep.FindForScanner(ctx)
+	orders, err := p.OrderRep.FindForScanner(ctx)
 	if err != nil {
-		s.Logger.Error(err)
+		p.Logger.Error(err)
 		return
 	}
 	for _, o := range orders {
-		err = updateAccrual(ctx, s.Cfg.Settings.AccrualSystemAddress, &o)
+		err = updateAccrual(ctx, p.Cfg.Settings.AccrualSystemAddress, &o)
 		if err != nil {
-			s.Logger.Error(err)
+			p.Logger.Error(err)
 			continue
 		}
-		err = s.OrderRep.Update(ctx, &o)
+		err = p.OrderRep.Update(ctx, &o)
 		if err != nil {
-			s.Logger.Error(err)
+			p.Logger.Error(err)
 		}
 	}
 }
