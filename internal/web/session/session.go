@@ -49,6 +49,6 @@ func GetSessionIDFromRequest(r *http.Request) string {
 }
 
 func PutSessionDataInRequest(r *http.Request, sID, usrID string) *http.Request {
-	newReq := r.WithContext(context.WithValue(r.Context(), ContextKey, sID))
-	return newReq.WithContext(context.WithValue(r.Context(), user.ContextKey, usrID))
+	r = r.WithContext(context.WithValue(r.Context(), ContextKey, sID))
+	return r.WithContext(context.WithValue(r.Context(), user.ContextKey, usrID))
 }

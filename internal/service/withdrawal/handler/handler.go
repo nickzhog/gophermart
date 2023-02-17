@@ -2,10 +2,12 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
 	"github.com/go-chi/chi"
+	"github.com/jackc/pgx/v4"
 	"github.com/nickzhog/gophermart/internal/repositories"
 	"github.com/nickzhog/gophermart/internal/service/user"
 	"github.com/nickzhog/gophermart/internal/service/withdrawal"
@@ -118,8 +120,12 @@ func (h *handler) withdrawActionHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	_, err = h.Withdrawal.FindByID(r.Context(), wdl.ID)
-	if err == nil {
-		h.writeError(w, "order already used", http.StatusConflict)
+	if !errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
+			h.writeError(w, "order already used", http.StatusConflict)
+			return
+		}
+		h.writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -139,6 +145,10 @@ func (h *handler) withdrawalsHandler(w http.ResponseWriter, r *http.Request) {
 	usrID := user.GetUserIDFromRequest(r)
 	withdrawals, err := h.Withdrawal.FindForUser(r.Context(), usrID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			h.writeAnswer(w, "no orders", http.StatusNoContent)
+			return
+		}
 		h.writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
