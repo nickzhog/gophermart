@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/jackc/pgx/v4"
 	"github.com/nickzhog/gophermart/internal/service/user"
 	mock_user "github.com/nickzhog/gophermart/internal/service/user/mocks"
 	"github.com/nickzhog/gophermart/internal/web/session"
@@ -39,7 +38,7 @@ func prepareLoginHandler(ctrl *gomock.Controller) *handler {
 			if login == validUsrLogin {
 				return user.User{ID: validUsrID, Login: validUsrLogin, PasswordHash: validUsrPasswordHash}, nil
 			}
-			return user.User{}, pgx.ErrNoRows
+			return user.User{}, user.ErrNoRows
 		})
 	h.Repositories.User = usrRep
 
@@ -121,7 +120,7 @@ func prepareRegisterHandler(ctrl *gomock.Controller) *handler {
 			if login != validUsrLogin {
 				return user.User{}, nil
 			}
-			return user.User{}, pgx.ErrNoRows
+			return user.User{}, user.ErrNoRows
 		})
 
 	usrRep.EXPECT().Create(gomock.Any(), gomock.Any()).AnyTimes().

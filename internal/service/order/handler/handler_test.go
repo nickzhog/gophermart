@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/jackc/pgx/v4"
 	"github.com/nickzhog/gophermart/internal/service/order"
 	mock_order "github.com/nickzhog/gophermart/internal/service/order/mocks"
 	"github.com/nickzhog/gophermart/internal/web/session"
@@ -107,7 +106,7 @@ func prepareOrdersListHandler(ctrl *gomock.Controller) *handler {
 				}, nil
 			}
 
-			return []order.Order{}, pgx.ErrNoRows
+			return []order.Order{}, order.ErrNoRows
 		})
 
 	h.Repositories.Order = orderRep

@@ -15,6 +15,8 @@ const (
 	StatusProcessed  = "PROCESSED"  // расчёт начисления окончен
 )
 
+var ErrNoRows = errors.New("order not found")
+
 type Order struct {
 	ID           string    `json:"number"`
 	UserID       string    `json:"-"`

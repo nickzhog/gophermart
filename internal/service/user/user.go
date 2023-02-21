@@ -6,7 +6,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/nickzhog/gophermart/internal/service/order"
 	"github.com/nickzhog/gophermart/internal/service/withdrawal"
 	"golang.org/x/crypto/bcrypt"
@@ -21,6 +20,8 @@ type User struct {
 type UserID string
 
 const ContextKey UserID = "user"
+
+var ErrNoRows = errors.New("user not found")
 
 func NewUser(login, password string) (User, error) {
 	if len(login) < 1 || len(password) < 1 {
@@ -40,7 +41,7 @@ func (u *User) CalculateWithdrawn(
 	withdrawalRep withdrawal.Repository,
 ) (float64, error) {
 	withdrawals, err := withdrawalRep.FindForUser(ctx, u.ID)
-	if err != nil && err != pgx.ErrNoRows {
+	if err != nil && err != withdrawal.ErrNoRows {
 		return 0, err
 	}
 	withdrawn := withdrawal.SumForWithdrawals(withdrawals)
@@ -53,7 +54,7 @@ func (u *User) CalculateBalance(
 	withdrawalRep withdrawal.Repository) (float64, error) {
 
 	orders, err := orderRep.FindForUser(ctx, u.ID)
-	if err != nil && err != pgx.ErrNoRows {
+	if err != nil && err != order.ErrNoRows {
 		return 0, err
 	}
 	withdrawn, err := u.CalculateWithdrawn(ctx, withdrawalRep)

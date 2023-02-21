@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/jackc/pgx/v4"
 	"github.com/nickzhog/gophermart/internal/service/order"
 	mock_order "github.com/nickzhog/gophermart/internal/service/order/mocks"
 	"github.com/nickzhog/gophermart/internal/service/user"
@@ -55,7 +54,7 @@ func prepareHandler(ctrl *gomock.Controller) *handler {
 			if id == validUsrID {
 				return user.User{ID: validUsrID}, nil
 			}
-			return user.User{}, pgx.ErrNoRows
+			return user.User{}, user.ErrNoRows
 		})
 	h.Repositories.User = usrRep
 
@@ -66,7 +65,7 @@ func prepareHandler(ctrl *gomock.Controller) *handler {
 				return []order.Order{order1, order2}, nil
 			}
 
-			return []order.Order{}, pgx.ErrNoRows
+			return []order.Order{}, order.ErrNoRows
 		})
 
 	h.Repositories.Order = orderRep
@@ -78,7 +77,7 @@ func prepareHandler(ctrl *gomock.Controller) *handler {
 				return []withdrawal.Withdrawal{withdrawal1, withdrawal2}, nil
 			}
 
-			return []withdrawal.Withdrawal{}, pgx.ErrNoRows
+			return []withdrawal.Withdrawal{}, withdrawal.ErrNoRows
 		})
 
 	withdrawalRep.EXPECT().FindByID(gomock.Any(), gomock.Any()).AnyTimes().
@@ -87,7 +86,7 @@ func prepareHandler(ctrl *gomock.Controller) *handler {
 				return withdrawal.Withdrawal{}, nil
 			}
 
-			return withdrawal.Withdrawal{}, pgx.ErrNoRows
+			return withdrawal.Withdrawal{}, withdrawal.ErrNoRows
 		})
 
 	withdrawalRep.EXPECT().Create(gomock.Any(), gomock.Any()).AnyTimes().

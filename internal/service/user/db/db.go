@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
 	"github.com/nickzhog/gophermart/internal/service/user"
 	"github.com/nickzhog/gophermart/pkg/logging"
 	"github.com/nickzhog/gophermart/pkg/postgres"
@@ -54,6 +55,9 @@ func (r *repository) FindByLogin(ctx context.Context, login string) (user.User, 
 		Scan(&usr.ID, &usr.Login, &usr.PasswordHash)
 
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return user.User{}, user.ErrNoRows
+		}
 		return user.User{}, err
 	}
 
@@ -74,6 +78,9 @@ func (r *repository) FindByID(ctx context.Context, id string) (user.User, error)
 	err := r.client.QueryRow(ctx, q, id).
 		Scan(&usr.ID, &usr.Login, &usr.PasswordHash)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return user.User{}, user.ErrNoRows
+		}
 		return user.User{}, err
 	}
 

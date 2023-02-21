@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/jackc/pgx/v4"
 	"github.com/nickzhog/gophermart/internal/repositories"
 	"github.com/nickzhog/gophermart/internal/service/user"
 	"github.com/nickzhog/gophermart/internal/web/session"
@@ -63,7 +62,7 @@ func (h *handler) registerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, err = h.User.FindByLogin(r.Context(), authData.Login)
-	if !errors.Is(err, pgx.ErrNoRows) {
+	if !errors.Is(err, user.ErrNoRows) {
 		if err == nil {
 			h.writeError(w, "login already used", http.StatusConflict)
 			return

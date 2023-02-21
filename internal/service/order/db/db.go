@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
 	"github.com/nickzhog/gophermart/internal/service/order"
 	"github.com/nickzhog/gophermart/pkg/logging"
 	"github.com/nickzhog/gophermart/pkg/postgres"
@@ -56,6 +57,9 @@ func (r *repository) FindByID(ctx context.Context, id string) (order.Order, erro
 		Scan(&o.ID, &o.UserID, &o.Status,
 			&o.Accrual, &o.UploadAt)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return order.Order{}, order.ErrNoRows
+		}
 		return order.Order{}, err
 	}
 

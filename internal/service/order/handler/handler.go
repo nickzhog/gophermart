@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/jackc/pgx/v4"
 	"github.com/nickzhog/gophermart/internal/repositories"
 	"github.com/nickzhog/gophermart/internal/service/order"
 	"github.com/nickzhog/gophermart/internal/service/user"
@@ -85,7 +84,7 @@ func (h *handler) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 	usrID := user.GetUserIDFromRequest(r)
 
 	orders, err := h.Order.FindForUser(r.Context(), usrID)
-	if err != nil && err != pgx.ErrNoRows {
+	if err != nil && err != order.ErrNoRows {
 		h.writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

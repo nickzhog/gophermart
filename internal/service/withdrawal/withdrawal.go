@@ -21,6 +21,8 @@ type WithdrawalRequest struct {
 	Sum   float64 `json:"sum,omitempty"`
 }
 
+var ErrNoRows = errors.New("withdrawal not found")
+
 func ParseWithdrawalRequest(data []byte) (WithdrawalRequest, error) {
 	var wr WithdrawalRequest
 	err := json.Unmarshal(data, &wr)

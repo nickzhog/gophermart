@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
 	"github.com/nickzhog/gophermart/internal/service/withdrawal"
 	"github.com/nickzhog/gophermart/pkg/logging"
 	"github.com/nickzhog/gophermart/pkg/postgres"
@@ -99,6 +100,9 @@ func (r *repository) FindByID(ctx context.Context, id string) (withdrawal.Withdr
 	err := r.client.QueryRow(ctx, q, id).
 		Scan(&w.ID, &w.UserID, &w.Sum, &w.ProcessedAt)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return withdrawal.Withdrawal{}, withdrawal.ErrNoRows
+		}
 		return withdrawal.Withdrawal{}, err
 	}
 
