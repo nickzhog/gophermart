@@ -30,7 +30,11 @@ func main() {
 		cancel()
 	}()
 
-	migration.Migrate(logger, cfg.Settings.DatabaseURI)
+	err := migration.Migrate(cfg.Settings.DatabaseURI)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
 	reps := repositories.GetRepositories(ctx, logger, cfg)
 
 	wg := new(sync.WaitGroup)
